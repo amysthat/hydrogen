@@ -489,6 +489,8 @@ public class Parser
                 return VariableType.UnsignedInteger64;
             case TokenType.SignedInteger64:
                 return VariableType.SignedInteger64;
+            case TokenType.Byte:
+                return VariableType.Byte;
         }
 
         return null;

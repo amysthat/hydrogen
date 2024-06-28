@@ -85,7 +85,7 @@ public class Generator
                 Pop("rax"); // Pop the first expression
                 if (type == NodeBinaryExpressionType.Add) output += "    add rax, rbx\n";
                 if (type == NodeBinaryExpressionType.Subtract) output += "    sub rax, rbx\n";
-                if (leftExprType == VariableType.UnsignedInteger64)
+                if (leftExprType == VariableType.UnsignedInteger64 || leftExprType == VariableType.Byte)
                 {
                     if (type == NodeBinaryExpressionType.Multiply) output += "    mul rbx\n";
                     if (type == NodeBinaryExpressionType.Divide) output += "    div rbx\n";
@@ -124,9 +124,9 @@ public class Generator
             case NodeStatementType.Exit:
                 var exitExprType = GenerateExpression(statement.Exit.ReturnCodeExpression);
 
-                if (exitExprType != VariableType.UnsignedInteger64) // Closest we have to byte
+                if (exitExprType != VariableType.Byte)
                 {
-                    Console.Error.WriteLine($"Invalid expression type on exit. Expected UnsignedInteger64 and got {exitExprType}.");
+                    Console.Error.WriteLine($"Invalid expression type on exit. Expected Byte and got {exitExprType}.");
                     Environment.Exit(1);
                 }
 
