@@ -7,6 +7,12 @@ public enum NodeExpressionType
 {
     Term,
     BinaryExpression,
+    Cast,
+}
+public struct NodeExprCast
+{
+    public VariableType CastType;
+    public NodeExpression Expression;
 }
 public class NodeExpression
 {
@@ -14,11 +20,13 @@ public class NodeExpression
 
     public NodeTerm Term;
     public NodeBinaryExpression BinaryExpression;
+    public NodeExprCast Cast;
 }
 
-public struct NodeTermIntLit
+public struct NodeTermInteger
 {
     public Token Int_Lit;
+    public VariableType VariableType;
 }
 public struct NodeTermIdentifier
 {
@@ -30,7 +38,7 @@ public struct NodeTermParen
 }
 public enum NodeTermType
 {
-    IntLit,
+    Integer,
     Identifier,
     Parenthesis
 }
@@ -38,7 +46,7 @@ public struct NodeTerm
 {
     public NodeTermType Type;
 
-    public NodeTermIntLit IntLit;
+    public NodeTermInteger Integer;
     public NodeTermIdentifier Identifier;
     public NodeTermParen Parenthesis;
 }
@@ -65,6 +73,7 @@ public struct NodeStmtExit
 public struct NodeStmtVar
 {
     public Token Identifier;
+    public VariableType Type;
     public NodeExpression ValueExpression;
 }
 public struct NodeStmtAssign
@@ -136,8 +145,15 @@ public class Parser
             return null;
 
         if (TryConsume(TokenType.Int_Lit, out var intLitToken))
-            return new NodeTerm { Type = NodeTermType.IntLit, IntLit = new NodeTermIntLit { Int_Lit = intLitToken!.Value } };
-        else if (TryConsume(TokenType.Identifier, out var identToken))
+        {
+            var nodeTermInteger = new NodeTermInteger
+            {
+                Int_Lit = intLitToken!.Value,
+                VariableType = VariableType.SignedInteger64,
+            };
+            return new NodeTerm { Type = NodeTermType.Integer, Integer = nodeTermInteger };
+        }
+        else if (TryConsume(TokenType.Identifier, out var identToken)) // Variable type handled by generator
             return new NodeTerm { Type = NodeTermType.Identifier, Identifier = new NodeTermIdentifier { Identifier = identToken!.Value } };
         else if (TryConsume(TokenType.OpenParenthesis, out _))
         {
@@ -162,6 +178,25 @@ public class Parser
     {
         if (!Peek().HasValue)
             return null;
+
+        if (TryConsume(TokenType.Cast, out var castToken))
+        {
+            var varType = ParseVariableType();
+
+            if (!varType.HasValue)
+            {
+                ErrorInvalid("variable type after 'cast'", castToken!.Value.LineNumber);
+            }
+
+            var expression = ParseExpression();
+
+            if (expression == null)
+            {
+                ErrorInvalid("expression for 'cast'", castToken!.Value.LineNumber);
+            }
+
+            return new NodeExpression { Type = NodeExpressionType.Cast, Cast = new NodeExprCast { CastType = varType!.Value, Expression = expression! } };
+        }
 
         var lhs_optional = ParseTerm()!;
 
@@ -253,7 +288,14 @@ public class Parser
             var identifierToken = Consume()!.Value; // Identifier
             Consume(); // ":"
 
-            TryPeek(TokenType.Equals, token => ErrorExpected("'=' expected after variable hint ':'", token.LineNumber));
+            var variableType = ParseVariableType();
+
+            if (!variableType.HasValue)
+            {
+                ErrorInvalid("variable type after variable hint", identifierToken.LineNumber);
+            }
+
+            TryPeek(TokenType.Equals, token => ErrorExpected("'=' expected after variable type", token.LineNumber));
 
             Consume(); // Equals
 
@@ -264,7 +306,7 @@ public class Parser
                 ErrorExpected("expression after '=' of variable statement", identifierToken.LineNumber);
             }
 
-            var statement = new NodeStatement { Type = NodeStatementType.Variable, Variable = new NodeStmtVar { Identifier = identifierToken, ValueExpression = expression! } };
+            var statement = new NodeStatement { Type = NodeStatementType.Variable, Variable = new NodeStmtVar { Identifier = identifierToken, Type = variableType!.Value, ValueExpression = expression! } };
 
             if (TryPeek(TokenType.Semicolon, _ => ErrorExpected("';' after variable statement", identifierToken.LineNumber)))
             {
@@ -434,6 +476,24 @@ public class Parser
         return nodeProgram;
     }
 
+    private VariableType? ParseVariableType()
+    {
+        if (!Peek().HasValue)
+            return null;
+
+        var token = Consume()!.Value;
+
+        switch (token.Type)
+        {
+            case TokenType.UnsignedInteger64:
+                return VariableType.UnsignedInteger64;
+            case TokenType.SignedInteger64:
+                return VariableType.SignedInteger64;
+        }
+
+        return null;
+    }
+
     private void ErrorExpected(string message, int line)
     {
         Console.Error.WriteLine($"Parse Error: Expected {message} on line {line}.");
@@ -443,12 +503,6 @@ public class Parser
     private void ErrorInvalid(string message, int line)
     {
         Console.Error.WriteLine($"Parse Error: Invalid {message} on line {line}.");
-        Environment.Exit(1);
-    }
-
-    private void ErrorFailure(string message, int line)
-    {
-        Console.Error.WriteLine($"Parse Error: Failure parsing {message} on line {line}.");
         Environment.Exit(1);
     }
 

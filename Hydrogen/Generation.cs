@@ -11,11 +11,6 @@ public class Generator
     private readonly Map<string, Variable> variables;
     private readonly List<int> scopes;
 
-    public struct Variable
-    {
-        public ulong StackLocation;
-    }
-
     public Generator(NodeProgram program)
     {
         this.program = program;
@@ -25,14 +20,14 @@ public class Generator
         scopes = [];
     }
 
-    public void GenerateTerm(NodeTerm term)
+    public VariableType GenerateTerm(NodeTerm term)
     {
         switch (term.Type)
         {
-            case NodeTermType.IntLit:
-                output += "    mov rax, " + term.IntLit.Int_Lit.Value + " ; IntLit expression\n";
+            case NodeTermType.Integer:
+                output += "    mov rax, " + term.Integer.Int_Lit.Value + " ; IntLit expression\n";
                 Push("rax"); // Push the literal to the top of the stack
-                break;
+                return term.Integer.VariableType;
 
             case NodeTermType.Identifier:
                 string identifier = term.Identifier.Identifier.Value!;
@@ -48,42 +43,68 @@ public class Generator
                 var lastStackPosition = StackSize - 1;
 
                 Push($"QWORD [rsp + {(lastStackPosition - variable.StackLocation) * 8}] ; {identifier} variable");
-                break;
+                return variable.Type;
 
             case NodeTermType.Parenthesis:
-                GenerateExpression(term.Parenthesis.Expression);
-                break;
+                return GenerateExpression(term.Parenthesis.Expression);
 
             default:
                 throw new InvalidProgramException("Reached unreachable state on GenerateTerm().");
         }
     }
 
-    public void GenerateExpression(NodeExpression expression)
+    public VariableType GenerateExpression(NodeExpression expression)
     {
         switch (expression.Type)
         {
             case NodeExpressionType.Term:
                 var term = expression.Term;
 
-                GenerateTerm(term);
-                break;
+                return GenerateTerm(term);
 
             case NodeExpressionType.BinaryExpression:
                 var binaryExpression = expression.BinaryExpression;
                 var type = binaryExpression.Type;
 
-                GenerateExpression(binaryExpression.Left);
-                GenerateExpression(binaryExpression.Right);
+                var leftExprType = GenerateExpression(binaryExpression.Left);
+                var rightExprType = GenerateExpression(binaryExpression.Right);
+
+                if (leftExprType != rightExprType)
+                {
+                    Console.Error.WriteLine("Expression type mismatch on binary expression.");
+                    Environment.Exit(1);
+                }
 
                 Pop("rbx ; Binary expression"); // Pop the second expression
                 Pop("rax"); // Pop the first expression
                 if (type == NodeBinaryExpressionType.Add) output += "    add rax, rbx\n";
                 if (type == NodeBinaryExpressionType.Subtract) output += "    sub rax, rbx\n";
-                if (type == NodeBinaryExpressionType.Multiply) output += "    mul rbx\n";
-                if (type == NodeBinaryExpressionType.Divide) output += "    div rbx\n";
+                if (leftExprType == VariableType.UnsignedInteger64)
+                {
+                    if (type == NodeBinaryExpressionType.Multiply) output += "    mul rbx\n";
+                    if (type == NodeBinaryExpressionType.Divide) output += "    div rbx\n";
+                }
+                else if (leftExprType == VariableType.SignedInteger64)
+                {
+                    if (type == NodeBinaryExpressionType.Multiply) output += "    imul rbx\n";
+                    if (type == NodeBinaryExpressionType.Divide) output += "    idiv rbx\n";
+                }
                 Push("rax"); // Push the output
-                break;
+                return leftExprType;
+
+            case NodeExpressionType.Cast:
+                var castExpression = expression.Cast.Expression;
+                var targetType = expression.Cast.CastType;
+
+                var expressionType = GenerateExpression(castExpression);
+
+                if (targetType == expressionType)
+                {
+                    Console.WriteLine($"Warning: Redundant cast of {targetType}.");
+                }
+
+                Variables.Cast(this, expressionType, targetType);
+                return targetType;
 
             default:
                 throw new InvalidProgramException("Reached unreachable state on GenerateExpression().");
@@ -95,7 +116,14 @@ public class Generator
         switch (statement.Type)
         {
             case NodeStatementType.Exit:
-                GenerateExpression(statement.Exit.ReturnCodeExpression);
+                var exitExprType = GenerateExpression(statement.Exit.ReturnCodeExpression);
+
+                if (exitExprType != VariableType.UnsignedInteger64) // Closest we have to byte
+                {
+                    Console.Error.WriteLine($"Invalid expression type on exit. Expected UnsignedInteger64 and got {exitExprType}.");
+                    Environment.Exit(1);
+                }
+
                 output += "    mov rax, 60 ; exit\n";
                 Pop("rdi"); // Retrieve literal from the top of the stack
                 output += "    syscall\n";
@@ -110,13 +138,22 @@ public class Generator
                     Environment.Exit(1);
                 }
 
-                output += $"    ; Define {identifier} variable\n";
+                var variableType = statement.Variable.Type;
 
-                GenerateExpression(statement.Variable.ValueExpression);
+                output += $"    ; Define {identifier} variable of type {variableType}\n";
+
+                var expressionType = GenerateExpression(statement.Variable.ValueExpression);
+
+                if (variableType != expressionType)
+                {
+                    Console.Error.WriteLine($"Type mismatch on variable statement. {variableType} != {expressionType}");
+                    Environment.Exit(1);
+                }
 
                 variables.Add(identifier, new Variable
                 {
-                    StackLocation = StackSize - 1 // Already pushed it with GenerateExpression and therefore -1
+                    StackLocation = StackSize - 1, // Already pushed it with GenerateExpression and therefore -1
+                    Type = variableType,
                 });
                 break;
 
@@ -135,7 +172,14 @@ public class Generator
 
                 output += $"    ; Assign {assignIdentifier}\n";
 
-                GenerateExpression(statement.Assign.ValueExpression);
+                var assignExprType = GenerateExpression(statement.Assign.ValueExpression);
+
+                if (variable.Type != assignExprType)
+                {
+                    Console.Error.WriteLine($"Type mismatch on variable assignment. ({variable.Type}) {assignIdentifier} != {assignExprType}");
+                    Environment.Exit(1);
+                }
+
                 Pop("rax");
                 output += $"    mov QWORD [rsp + {(lastStackPosition - variable.StackLocation) * 8}], rax\n";
                 break;

@@ -5,6 +5,7 @@ namespace Hydrogen.Tokenization;
 public enum TokenType
 {
     Exit,
+
     If,
     Elif,
     Else,
@@ -27,6 +28,10 @@ public enum TokenType
     Star,
     Minus,
     Slash,
+
+    Cast,
+    SignedInteger64,
+    UnsignedInteger64,
 }
 
 public struct Token
@@ -78,13 +83,19 @@ public class Tokenizer
                     tokens.Add(PrepareToken(TokenType.Elif, lineCount));
                 else if (buf == "else")
                     tokens.Add(PrepareToken(TokenType.Else, lineCount));
+                else if (buf == "cast")
+                    tokens.Add(PrepareToken(TokenType.Cast, lineCount));
+                else if (buf == "i64")
+                    tokens.Add(PrepareToken(TokenType.SignedInteger64, lineCount));
+                else if (buf == "u64")
+                    tokens.Add(PrepareToken(TokenType.UnsignedInteger64, lineCount));
                 else // Identifier
                     tokens.Add(PrepareToken(TokenType.Identifier, lineCount, buf));
 
                 buf = string.Empty;
                 continue;
             }
-            else if (char.IsDigit(peekedChar))
+            else if (char.IsDigit(peekedChar) || (peekedChar == '-' && tokens[^1].Type != TokenType.Int_Lit && Peek(1)!.HasValue && char.IsDigit(Peek(1)!.Value)))
             {
                 buf += Consume();
 

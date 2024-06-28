@@ -12,3 +12,4 @@
 /home/burak/dev/programminglang/hydrogen/Hydrogen/obj/Debug/net8.0/Hydrogen.pdb
 /home/burak/dev/programminglang/hydrogen/Hydrogen/obj/Debug/net8.0/Hydrogen.genruntimeconfig.cache
 /home/burak/dev/programminglang/hydrogen/Hydrogen/obj/Debug/net8.0/ref/Hydrogen.dll
+/home/burak/dev/programminglang/hydrogen/Hydrogen/obj/Debug/net8.0/Hydrogen.sourcelink.json

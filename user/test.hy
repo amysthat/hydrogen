@@ -1,12 +1,4 @@
-code := 0;
+finalErrorCode : i64 = ((5 + 64) / 2) * 3;
+actualErrorCode : u64 = cast u64 finalErrorCode;
 
-if code
-{
-    code = 0;
-}
-else
-{
-    code = 10;
-}
-
-exit code;
+exit actualErrorCode;

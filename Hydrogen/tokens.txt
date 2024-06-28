@@ -1,0 +1,33 @@
+Identifier code
+VariableHint 
+SignedInteger64 
+Equals 
+OpenParenthesis 
+Cast 
+UnsignedInteger64 
+OpenParenthesis 
+Cast 
+UnsignedInteger64 
+Int_Lit 5
+Plus 
+Cast 
+UnsignedInteger64 
+Int_Lit 64
+CloseParenthesis 
+Slash 
+Cast 
+UnsignedInteger64 
+Int_Lit 2
+CloseParenthesis 
+Star 
+Cast 
+UnsignedInteger64 
+Int_Lit 3
+Semicolon 
+
+Exit 
+Cast 
+UnsignedInteger64 
+Identifier code
+Semicolon 
+

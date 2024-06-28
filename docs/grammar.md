@@ -5,10 +5,10 @@ $$
 
     [\text{stmt}] &\to \begin{cases} 
                         \text{exit} \space [\text{expr}]; \\
-                        \text{ident} := [\text{expr}]; \\
+                        \text{ident} : [\text{varType}] = [\text{expr}]; \\
                         \text{ident} = [\text{expr}]; \\
                         [\text{scope}] \\
-                        [\text{ifstmt}]
+                        [\text{ifstmt}] \\
                         \end{cases} \\
 
     [\text{ifstmt}] &\to \begin{cases}
@@ -24,6 +24,7 @@ $$
     [\text{expr}] &\to \begin{cases}
                         [\text{term}] \\
                         [\text{binExpr}] \\
+                        \text{cast} \space [\text{varType}] \space [\text{expr}] \\
                         \end{cases} \\
 
     [\text{binExpr}] &\to \begin{cases}
@@ -32,11 +33,21 @@ $$
                         [\text{term}] + [\text{expr}] & \text{prec} = 0 \\
                         [\text{term}] - [\text{expr}] & \text{prec} = 0 \\
                         \end{cases} \\
+                        & ^\text{must have matching [varType]} \\
     
     [\text{term}] &\to \begin{cases}
-                        \text{int\_lit} \\
+                        [\text{integer}] \\
                         \text{ident} \\
                         ([\text{expr}])
+                        \end{cases} \& \space \text{[varType]}\\
+
+    [\text{integer}] &\to \begin{cases}
+                        \text{int\_lit} \space \& \space [\text{varType}] ^\text{(i64)} \\
+                        \end{cases} \\
+    
+    [\text{varType}] &\to \begin{cases}
+                        \text{i64} \\
+                        \text{u64} \\
                         \end{cases} \\
 
 \end{align}
