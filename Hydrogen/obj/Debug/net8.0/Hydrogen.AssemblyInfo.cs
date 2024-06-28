@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Hydrogen")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+31e1aeaaf16c3008f8cbb549ca27070936c54ace")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+54d522419a8a574a3db009a62ec825d1d0155e83")]
 [assembly: System.Reflection.AssemblyProductAttribute("Hydrogen")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Hydrogen")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

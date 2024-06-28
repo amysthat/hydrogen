@@ -48,6 +48,15 @@ Int_Lit 16
 Semicolon 
 
 CloseCurlyBraces 
+Identifier actualErrorCode
+Equals 
+Identifier actualErrorCode
+Star 
+Cast 
+UnsignedInteger64 
+Int_Lit 2
+Semicolon 
+
 Exit 
 Identifier actualErrorCode
 Semicolon 

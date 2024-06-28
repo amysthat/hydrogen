@@ -36,6 +36,16 @@ _start:
     sub rax, rbx
     push rax
     add rsp, 16 ; End scope with 2 variable(s)
+    ; Assign actualErrorCode
+    push QWORD [rsp + 0] ; actualErrorCode variable
+    mov rax, 2 ; IntLit expression
+    push rax
+    pop rbx ; Binary expression
+    pop rax
+    mul rbx
+    push rax
+    pop rax
+    mov QWORD [rsp + 0], rax
     push QWORD [rsp + 0] ; actualErrorCode variable
     mov rax, 60 ; exit
     pop rdi

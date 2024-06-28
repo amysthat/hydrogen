@@ -174,8 +174,6 @@ public class Generator
 
                 var variable = variables.GetValueByKey(assignIdentifier);
 
-                var lastStackPosition = StackSize - 1;
-
                 output += $"    ; Assign {assignIdentifier}\n";
 
                 var assignExprType = GenerateExpression(statement.Assign.ValueExpression);
@@ -187,7 +185,7 @@ public class Generator
                 }
 
                 Pop("rax");
-                output += $"    mov QWORD [rsp + {(lastStackPosition - variable.StackLocation) * 8}], rax\n";
+                output += $"    mov QWORD [rsp + {StackSize - variable.StackLocation - Variables.GetSize(variable.Type)}], rax\n";
                 break;
 
             case NodeStatementType.Scope:
