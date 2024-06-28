@@ -1,0 +1,27 @@
+Identifier code
+VariableHint 
+Equals 
+Int_Lit 0
+Semicolon 
+
+If 
+Identifier code
+OpenCurlyBraces 
+Identifier code
+Equals 
+Int_Lit 0
+Semicolon 
+
+CloseCurlyBraces 
+Else 
+OpenCurlyBraces 
+Identifier code
+Equals 
+Int_Lit 10
+Semicolon 
+
+CloseCurlyBraces 
+Exit 
+Identifier code
+Semicolon 
+
