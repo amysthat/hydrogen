@@ -9,7 +9,13 @@ public class Generator
     private ulong StackSize;
     private int labelCount;
     private readonly Map<string, Variable> variables;
-    private readonly List<int> scopes;
+    private readonly List<Scope> scopes;
+
+    public struct Scope
+    {
+        public ulong baseStackSize;
+        public int baseVariableCount;
+    }
 
     public Generator(NodeProgram program)
     {
@@ -40,9 +46,9 @@ public class Generator
 
                 var variable = variables.GetValueByKey(identifier);
 
-                var lastStackPosition = StackSize - 1;
+                var lastStackPosition = StackSize - Variables.GetSize(variable.Type);
 
-                Push($"QWORD [rsp + {(lastStackPosition - variable.StackLocation) * 8}] ; {identifier} variable");
+                Push($"QWORD [rsp + {lastStackPosition - variable.StackLocation}] ; {identifier} variable", Variables.GetSize(variable.Type));
                 return variable.Type;
 
             case NodeTermType.Parenthesis:
@@ -152,7 +158,7 @@ public class Generator
 
                 variables.Add(identifier, new Variable
                 {
-                    StackLocation = StackSize - 1, // Already pushed it with GenerateExpression and therefore -1
+                    StackLocation = StackSize - Variables.GetSize(variableType), // Already pushed it with GenerateExpression and therefore -1
                     Type = variableType,
                 });
                 break;
@@ -256,31 +262,57 @@ public class Generator
 
     private void BeginScope()
     {
-        scopes.Add(variables.Count);
+        scopes.Add(new Scope { baseStackSize = StackSize, baseVariableCount = variables.Count });
 
         output += "    ; Start scope\n";
     }
 
     private void EndScope()
     {
-        int pop_count = variables.Count - scopes[^1];
+        ulong stack_size_to_be_freed = StackSize - scopes[^1].baseStackSize;
+        int variable_count_to_be_freed = variables.Count - scopes[^1].baseVariableCount;
 
-        output += $"    add rsp, {pop_count * 8} ; End scope with {pop_count} variable(s)\n";
-        StackSize -= (ulong)pop_count;
+        output += $"    add rsp, {stack_size_to_be_freed} ; End scope with {variable_count_to_be_freed} variable(s)\n";
+        StackSize -= stack_size_to_be_freed;
 
-        variables.PopBack(pop_count);
+        variables.PopBack(variable_count_to_be_freed);
         scopes.RemoveAt(scopes.Count - 1);
     }
 
     private void Push(string register)
     {
         output += $"    push {register}\n";
-        StackSize++;
+        StackSize += GetSizeFromRegister(register);
+    }
+
+    private void Push(string register, ulong size)
+    {
+        output += $"    push {register}\n";
+        StackSize += size;
     }
 
     private void Pop(string register)
     {
         output += $"    pop {register}\n";
-        StackSize--;
+        StackSize -= GetSizeFromRegister(register);
+    }
+
+    private ulong GetSizeFromRegister(string register)
+    {
+
+
+        if (register[0] == 'r')
+            return 8; // 64 bits
+
+        if (register[0] == 'e')
+            return 4; // 32 bits
+
+        if (register[1] == 'x')
+            return 2; // 16 bits
+
+        if (register[1] == 'l')
+            return 1; // 8 bits
+
+        throw new InvalidDataException(register);
     }
 }

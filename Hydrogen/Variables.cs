@@ -41,4 +41,16 @@ public static class Variables
 
         throw new NotImplementedException($"Casting {castType} to {targetType} is not supported yet.");
     }
+
+    public static ulong GetSize(VariableType type)
+    {
+        switch (type)
+        {
+            case VariableType.SignedInteger64:
+            case VariableType.UnsignedInteger64:
+                return 8;
+        }
+
+        throw new InvalidOperationException($"Unknown variable type: {type}");
+    }
 }
