@@ -247,7 +247,7 @@ public class Generator
 
     public string GenerateProgram()
     {
-        output = "global _start\n_start:\n";
+        output = "section .text\n    global _start\n\n_start:\n";
 
         foreach (var statement in program.Statements)
         {
