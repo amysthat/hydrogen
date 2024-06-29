@@ -26,7 +26,6 @@ public class NodeExpression
 public struct NodeTermInteger
 {
     public Token Int_Lit;
-    public VariableType VariableType;
 }
 public struct NodeTermIdentifier
 {
@@ -149,7 +148,6 @@ public class Parser
             var nodeTermInteger = new NodeTermInteger
             {
                 Int_Lit = intLitToken!.Value,
-                VariableType = VariableType.SignedInteger64,
             };
             return new NodeTerm { Type = NodeTermType.Integer, Integer = nodeTermInteger };
         }

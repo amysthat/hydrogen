@@ -39,10 +39,10 @@ $$
                         [\text{integer}] \\
                         \text{ident} \\
                         ([\text{expr}])
-                        \end{cases} \& \space \text{[varType]}\\
+                        \end{cases} \\
 
     [\text{integer}] &\to \begin{cases}
-                        \text{int\_lit} \space \& \space [\text{varType}] ^\text{(i64)} \\
+                        \text{int\_lit} \\
                         \end{cases} \\
     
     [\text{varType}] &\to \begin{cases}

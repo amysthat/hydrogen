@@ -26,14 +26,15 @@ public class Generator
         scopes = [];
     }
 
-    public VariableType GenerateTerm(NodeTerm term)
+    public VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
     {
         switch (term.Type)
         {
             case NodeTermType.Integer:
-                output += "    mov rax, " + term.Integer.Int_Lit.Value + " ; IntLit expression\n";
+                var variableType = Variables.IsInteger(suggestionType) ? suggestionType : VariableType.SignedInteger64;
+                output += $"    mov rax, {term.Integer.Int_Lit.Value} ; IntLit expression for type {variableType}\n";
                 Push("rax"); // Push the literal to the top of the stack
-                return term.Integer.VariableType;
+                return variableType;
 
             case NodeTermType.Identifier:
                 string identifier = term.Identifier.Identifier.Value!;
@@ -46,34 +47,34 @@ public class Generator
 
                 var variable = variables.GetValueByKey(identifier);
 
-                var lastStackPosition = StackSize - Variables.GetSize(variable.Type);
+                var lastStackPosition = StackSize - 8;
 
-                Push($"QWORD [rsp + {lastStackPosition - variable.StackLocation}] ; {identifier} variable", Variables.GetSize(variable.Type));
+                Push($"QWORD [rsp + {lastStackPosition - variable.StackLocation}] ; {identifier} variable");
                 return variable.Type;
 
             case NodeTermType.Parenthesis:
-                return GenerateExpression(term.Parenthesis.Expression);
+                return GenerateExpression(term.Parenthesis.Expression, suggestionType);
 
             default:
                 throw new InvalidProgramException("Reached unreachable state on GenerateTerm().");
         }
     }
 
-    public VariableType GenerateExpression(NodeExpression expression)
+    public VariableType GenerateExpression(NodeExpression expression, VariableType suggestionType)
     {
         switch (expression.Type)
         {
             case NodeExpressionType.Term:
                 var term = expression.Term;
 
-                return GenerateTerm(term);
+                return GenerateTerm(term, suggestionType);
 
             case NodeExpressionType.BinaryExpression:
                 var binaryExpression = expression.BinaryExpression;
                 var type = binaryExpression.Type;
 
-                var leftExprType = GenerateExpression(binaryExpression.Left);
-                var rightExprType = GenerateExpression(binaryExpression.Right);
+                var leftExprType = GenerateExpression(binaryExpression.Left, suggestionType);
+                var rightExprType = GenerateExpression(binaryExpression.Right, suggestionType);
 
                 if (leftExprType != rightExprType)
                 {
@@ -102,7 +103,7 @@ public class Generator
                 var castExpression = expression.Cast.Expression;
                 var targetType = expression.Cast.CastType;
 
-                var expressionType = GenerateExpression(castExpression);
+                var expressionType = GenerateExpression(castExpression, suggestionType);
 
                 if (targetType == expressionType)
                 {
@@ -122,7 +123,7 @@ public class Generator
         switch (statement.Type)
         {
             case NodeStatementType.Exit:
-                var exitExprType = GenerateExpression(statement.Exit.ReturnCodeExpression);
+                var exitExprType = GenerateExpression(statement.Exit.ReturnCodeExpression, VariableType.UnsignedInteger64);
 
                 if (exitExprType != VariableType.UnsignedInteger64) // Closest we have to byte
                 {
@@ -148,7 +149,7 @@ public class Generator
 
                 output += $"    ; Define {identifier} variable of type {variableType}\n";
 
-                var expressionType = GenerateExpression(statement.Variable.ValueExpression);
+                var expressionType = GenerateExpression(statement.Variable.ValueExpression, variableType);
 
                 if (variableType != expressionType)
                 {
@@ -158,7 +159,7 @@ public class Generator
 
                 variables.Add(identifier, new Variable
                 {
-                    StackLocation = StackSize - Variables.GetSize(variableType), // Already pushed it with GenerateExpression and therefore -1
+                    StackLocation = StackSize - 8, // Already pushed it with GenerateExpression and therefore -8
                     Type = variableType,
                 });
                 break;
@@ -174,11 +175,11 @@ public class Generator
 
                 var variable = variables.GetValueByKey(assignIdentifier);
 
-                var lastStackPosition = StackSize - 1;
+                var lastStackPosition = StackSize - 8;
 
                 output += $"    ; Assign {assignIdentifier}\n";
 
-                var assignExprType = GenerateExpression(statement.Assign.ValueExpression);
+                var assignExprType = GenerateExpression(statement.Assign.ValueExpression, variable.Type);
 
                 if (variable.Type != assignExprType)
                 {
@@ -187,7 +188,7 @@ public class Generator
                 }
 
                 Pop("rax");
-                output += $"    mov QWORD [rsp + {(lastStackPosition - variable.StackLocation) * 8}], rax\n";
+                output += $"    mov QWORD [rsp + {lastStackPosition - variable.StackLocation}], rax\n";
                 break;
 
             case NodeStatementType.Scope:
@@ -199,7 +200,7 @@ public class Generator
 
                 var finalLabelIndex = labelCount + ifStatement.Elifs.Count + (ifStatement.Else.HasValue ? 1 : 0);
 
-                GenerateExpression(ifStatement.This.Expression);
+                GenerateExpression(ifStatement.This.Expression, VariableType.SignedInteger64);
                 Pop("rax");
                 output += $"    cmp rax, 0\n";
                 output += $"    je label{labelCount}\n";
@@ -211,7 +212,7 @@ public class Generator
                     var elifStatement = ifStatement.Elifs[i];
 
                     output += $"label{labelCount}:\n"; labelCount++;
-                    GenerateExpression(elifStatement.Expression);
+                    GenerateExpression(elifStatement.Expression, VariableType.SignedInteger64);
                     Pop("rax");
                     output += $"    cmp rax, 0\n";
                     output += $"    je label{labelCount}\n";
@@ -282,37 +283,12 @@ public class Generator
     private void Push(string register)
     {
         output += $"    push {register}\n";
-        StackSize += GetSizeFromRegister(register);
-    }
-
-    private void Push(string register, ulong size)
-    {
-        output += $"    push {register}\n";
-        StackSize += size;
+        StackSize += 8;
     }
 
     private void Pop(string register)
     {
         output += $"    pop {register}\n";
-        StackSize -= GetSizeFromRegister(register);
-    }
-
-    private ulong GetSizeFromRegister(string register)
-    {
-
-
-        if (register[0] == 'r')
-            return 8; // 64 bits
-
-        if (register[0] == 'e')
-            return 4; // 32 bits
-
-        if (register[1] == 'x')
-            return 2; // 16 bits
-
-        if (register[1] == 'l')
-            return 1; // 8 bits
-
-        throw new InvalidDataException(register);
+        StackSize -= 8;
     }
 }
