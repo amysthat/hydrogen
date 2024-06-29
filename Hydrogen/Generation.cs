@@ -85,7 +85,7 @@ public class Generator
                 Pop("rax"); // Pop the first expression
                 if (type == NodeBinaryExpressionType.Add) output += "    add rax, rbx\n";
                 if (type == NodeBinaryExpressionType.Subtract) output += "    sub rax, rbx\n";
-                if (leftExprType == VariableType.UnsignedInteger64 || leftExprType == VariableType.Byte)
+                if (leftExprType == VariableType.UnsignedInteger64)
                 {
                     if (type == NodeBinaryExpressionType.Multiply) output += "    mul rbx\n";
                     if (type == NodeBinaryExpressionType.Divide) output += "    div rbx\n";
@@ -124,9 +124,9 @@ public class Generator
             case NodeStatementType.Exit:
                 var exitExprType = GenerateExpression(statement.Exit.ReturnCodeExpression);
 
-                if (exitExprType != VariableType.Byte)
+                if (exitExprType != VariableType.UnsignedInteger64) // Closest we have to byte
                 {
-                    Console.Error.WriteLine($"Invalid expression type on exit. Expected Byte and got {exitExprType}.");
+                    Console.Error.WriteLine($"Invalid expression type on exit. Expected UnsignedInteger64 and got {exitExprType}.");
                     Environment.Exit(1);
                 }
 
@@ -174,6 +174,8 @@ public class Generator
 
                 var variable = variables.GetValueByKey(assignIdentifier);
 
+                var lastStackPosition = StackSize - 1;
+
                 output += $"    ; Assign {assignIdentifier}\n";
 
                 var assignExprType = GenerateExpression(statement.Assign.ValueExpression);
@@ -185,7 +187,7 @@ public class Generator
                 }
 
                 Pop("rax");
-                output += $"    mov QWORD [rsp + {StackSize - variable.StackLocation - Variables.GetSize(variable.Type)}], rax\n";
+                output += $"    mov QWORD [rsp + {(lastStackPosition - variable.StackLocation) * 8}], rax\n";
                 break;
 
             case NodeStatementType.Scope:

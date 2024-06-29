@@ -1,3 +1,3 @@
-ready_code : byte = cast byte 5;
+ready_code : i64 = 5;
 
-exit ready_code;
+exit cast u64 ready_code;

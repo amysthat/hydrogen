@@ -32,7 +32,6 @@ public enum TokenType
     Cast,
     SignedInteger64,
     UnsignedInteger64,
-    Byte,
 }
 
 public struct Token
@@ -71,7 +70,7 @@ public class Tokenizer
             {
                 buf += Consume();
 
-                while (Peek().HasValue && (char.IsLetterOrDigit(Peek()!.Value) || Peek()!.Value == '_'))
+                while (Peek().HasValue && (char.IsLetterOrDigit(Peek()!.Value) || Peek().HasValue && Peek()!.Value == '_'))
                 {
                     buf += Consume();
                 }
@@ -90,8 +89,6 @@ public class Tokenizer
                     tokens.Add(PrepareToken(TokenType.SignedInteger64, lineCount));
                 else if (buf == "u64")
                     tokens.Add(PrepareToken(TokenType.UnsignedInteger64, lineCount));
-                else if (buf == "byte")
-                    tokens.Add(PrepareToken(TokenType.Byte, lineCount));
                 else // Identifier
                     tokens.Add(PrepareToken(TokenType.Identifier, lineCount, buf));
 

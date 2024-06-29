@@ -6,7 +6,6 @@ public enum VariableType
 {
     UnsignedInteger64,
     SignedInteger64,
-    Byte,
 }
 
 public struct Variable
@@ -29,25 +28,12 @@ public static class Variables
                 {
                     case VariableType.UnsignedInteger64:
                         return;
-                    case VariableType.Byte:
-                        return;
                 }
                 break;
             case VariableType.UnsignedInteger64:
                 switch (targetType)
                 {
                     case VariableType.SignedInteger64:
-                        return;
-                    case VariableType.Byte:
-                        return;
-                }
-                break;
-            case VariableType.Byte:
-                switch (targetType)
-                {
-                    case VariableType.SignedInteger64:
-                        return;
-                    case VariableType.UnsignedInteger64:
                         return;
                 }
                 break;
@@ -63,8 +49,6 @@ public static class Variables
             case VariableType.SignedInteger64:
             case VariableType.UnsignedInteger64:
                 return 8;
-            case VariableType.Byte:
-                return 1;
         }
 
         throw new InvalidOperationException($"Unknown variable type: {type}");
