@@ -32,6 +32,7 @@ public enum TokenType
     Cast,
     SignedInteger64,
     UnsignedInteger64,
+    Byte,
 }
 
 public struct Token
@@ -89,6 +90,8 @@ public class Tokenizer
                     tokens.Add(PrepareToken(TokenType.SignedInteger64, lineCount));
                 else if (buf == "u64")
                     tokens.Add(PrepareToken(TokenType.UnsignedInteger64, lineCount));
+                else if (buf == "byte")
+                    tokens.Add(PrepareToken(TokenType.Byte, lineCount));
                 else // Identifier
                     tokens.Add(PrepareToken(TokenType.Identifier, lineCount, buf));
 

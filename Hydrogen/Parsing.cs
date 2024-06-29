@@ -268,6 +268,40 @@ public class Parser
         {
             NodeStatement? exitStatement = null;
 
+            if (TryConsume(TokenType.Semicolon, out _))
+            {
+                exitStatement = new NodeStatement
+                {
+                    Type = NodeStatementType.Exit,
+                    Exit =
+                    new NodeStmtExit
+                    {
+                        ReturnCodeExpression =
+                        new NodeExpression
+                        {
+                            Type = NodeExpressionType.Term,
+                            Term =
+                            new NodeTerm
+                            {
+                                Type = NodeTermType.Integer,
+                                Integer =
+                                new NodeTermInteger
+                                {
+                                    Int_Lit =
+                                    new Token
+                                    {
+                                        Type = TokenType.Int_Lit,
+                                        Value = "0",
+                                        LineNumber = exitToken!.Value.LineNumber
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+                return exitStatement;
+            }
+
             var nodeExpr = ParseExpression(); // return code
 
             if (nodeExpr != null)
@@ -492,6 +526,8 @@ public class Parser
                 return VariableType.UnsignedInteger64;
             case TokenType.SignedInteger64:
                 return VariableType.SignedInteger64;
+            case TokenType.Byte:
+                return VariableType.Byte;
         }
 
         return null;

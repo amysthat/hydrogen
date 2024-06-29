@@ -5,7 +5,7 @@ namespace Hydrogen.Generation;
 public class Generator
 {
     private NodeProgram program;
-    private string output;
+    public string output;
     private ulong StackSize;
     private int labelCount;
     private readonly Map<string, Variable> variables;
@@ -26,13 +26,13 @@ public class Generator
         scopes = [];
     }
 
-    public VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
+    private VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
     {
         switch (term.Type)
         {
             case NodeTermType.Integer:
                 var variableType = Variables.IsInteger(suggestionType) ? suggestionType : VariableType.SignedInteger64;
-                output += $"    mov rax, {term.Integer.Int_Lit.Value} ; IntLit expression for type {variableType}\n";
+                Variables.MoveIntegerToRegister(this, "rax", term.Integer, variableType);
                 Push("rax"); // Push the literal to the top of the stack
                 return variableType;
 
@@ -60,7 +60,7 @@ public class Generator
         }
     }
 
-    public VariableType GenerateExpression(NodeExpression expression, VariableType suggestionType)
+    private VariableType GenerateExpression(NodeExpression expression, VariableType suggestionType)
     {
         switch (expression.Type)
         {
@@ -70,40 +70,13 @@ public class Generator
                 return GenerateTerm(term, suggestionType);
 
             case NodeExpressionType.BinaryExpression:
-                var binaryExpression = expression.BinaryExpression;
-                var type = binaryExpression.Type;
-
-                var leftExprType = GenerateExpression(binaryExpression.Left, suggestionType);
-                var rightExprType = GenerateExpression(binaryExpression.Right, suggestionType);
-
-                if (leftExprType != rightExprType)
-                {
-                    Console.Error.WriteLine("Expression type mismatch on binary expression.");
-                    Environment.Exit(1);
-                }
-
-                Pop("rbx ; Binary expression"); // Pop the second expression
-                Pop("rax"); // Pop the first expression
-                if (type == NodeBinaryExpressionType.Add) output += "    add rax, rbx\n";
-                if (type == NodeBinaryExpressionType.Subtract) output += "    sub rax, rbx\n";
-                if (leftExprType == VariableType.UnsignedInteger64)
-                {
-                    if (type == NodeBinaryExpressionType.Multiply) output += "    mul rbx\n";
-                    if (type == NodeBinaryExpressionType.Divide) output += "    div rbx\n";
-                }
-                else if (leftExprType == VariableType.SignedInteger64)
-                {
-                    if (type == NodeBinaryExpressionType.Multiply) output += "    imul rbx\n";
-                    if (type == NodeBinaryExpressionType.Divide) output += "    idiv rbx\n";
-                }
-                Push("rax"); // Push the output
-                return leftExprType;
+                return GenerateBinaryExpression(expression.BinaryExpression, suggestionType);
 
             case NodeExpressionType.Cast:
                 var castExpression = expression.Cast.Expression;
                 var targetType = expression.Cast.CastType;
 
-                var expressionType = GenerateExpression(castExpression, suggestionType);
+                var expressionType = GenerateExpression(castExpression, targetType);
 
                 if (targetType == expressionType)
                 {
@@ -118,16 +91,54 @@ public class Generator
         }
     }
 
-    public void GenerateStatement(NodeStatement statement)
+    private VariableType GenerateBinaryExpression(NodeBinaryExpression binaryExpression, VariableType suggestionType)
+    {
+        var type = binaryExpression.Type;
+
+        var leftExprType = GenerateExpression(binaryExpression.Left, suggestionType);
+        var rightExprType = GenerateExpression(binaryExpression.Right, leftExprType);
+
+        if (!Variables.IsInteger(leftExprType) || !Variables.IsInteger(rightExprType))
+        {
+            Console.Error.WriteLine("Expected integer types for binary expression.");
+            Environment.Exit(1);
+        }
+
+        if (leftExprType != rightExprType)
+        {
+            Console.Error.WriteLine("Expression type mismatch on binary expression.");
+            Environment.Exit(1);
+        }
+
+        Pop("rbx ; Binary expression"); // Pop the second expression
+        Pop("rax"); // Pop the first expression
+        if (type == NodeBinaryExpressionType.Add) output += "    add rax, rbx\n";
+        if (type == NodeBinaryExpressionType.Subtract) output += "    sub rax, rbx\n";
+        if (Variables.IsSignedInteger(leftExprType))
+        {
+            if (type == NodeBinaryExpressionType.Multiply) output += "    imul rbx\n";
+            if (type == NodeBinaryExpressionType.Divide) output += "    idiv rbx\n";
+        }
+        else
+        {
+            if (type == NodeBinaryExpressionType.Multiply) output += "    mul rbx\n";
+            if (type == NodeBinaryExpressionType.Divide) output += "    div rbx\n";
+        }
+        Push("rax"); // Push the output
+        Variables.CapInteger(this, leftExprType);
+        return leftExprType;
+    }
+
+    private void GenerateStatement(NodeStatement statement)
     {
         switch (statement.Type)
         {
             case NodeStatementType.Exit:
-                var exitExprType = GenerateExpression(statement.Exit.ReturnCodeExpression, VariableType.UnsignedInteger64);
+                var exitExprType = GenerateExpression(statement.Exit.ReturnCodeExpression, VariableType.Byte);
 
-                if (exitExprType != VariableType.UnsignedInteger64) // Closest we have to byte
+                if (exitExprType != VariableType.Byte)
                 {
-                    Console.Error.WriteLine($"Invalid expression type on exit. Expected UnsignedInteger64 and got {exitExprType}.");
+                    Console.Error.WriteLine($"Invalid expression type on exit. Expected Byte and got {exitExprType}.");
                     Environment.Exit(1);
                 }
 
@@ -235,7 +246,7 @@ public class Generator
         }
     }
 
-    public void GenerateScope(NodeScope scope)
+    private void GenerateScope(NodeScope scope)
     {
         BeginScope();
         foreach (var statement in scope.Statements)
@@ -280,15 +291,25 @@ public class Generator
         scopes.RemoveAt(scopes.Count - 1);
     }
 
-    private void Push(string register)
+    public void Push(string register)
     {
+        ThrowIfRegisterIsnt64Bit(register);
+
         output += $"    push {register}\n";
         StackSize += 8;
     }
 
-    private void Pop(string register)
+    public void Pop(string register)
     {
+        ThrowIfRegisterIsnt64Bit(register);
+
         output += $"    pop {register}\n";
         StackSize -= 8;
+    }
+
+    private void ThrowIfRegisterIsnt64Bit(string register) // Self-protection
+    {
+        if (register[0] != 'r' && register[0] != 'Q') // Q for QWORD [rsp]
+            throw new InvalidOperationException($"Non 64-bit integers are not allowed: {register}");
     }
 }
