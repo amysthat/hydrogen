@@ -7,6 +7,6 @@ y : i64 = x * -1;
 	t : u64 = z * 5;
 }
 
-return_code : u64 = cast u64 y;
+return_code : u64 = u64 cast y;
 
 exit return_code;

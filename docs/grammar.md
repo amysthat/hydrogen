@@ -24,7 +24,7 @@ $$
     [\text{expr}] &\to \begin{cases}
                         [\text{term}] \\
                         [\text{binExpr}] \\
-                        \text{cast} \space [\text{varType}] \space [\text{expr}] \\
+                        [\text{varType}] \space \text{cast} \space [\text{expr}] \\
                         \end{cases} \\
 
     [\text{binExpr}] &\to \begin{cases}

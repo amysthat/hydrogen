@@ -177,20 +177,25 @@ public class Parser
         if (!Peek().HasValue)
             return null;
 
-        if (TryConsume(TokenType.Cast, out var castToken))
+        if (TryPeek(TokenType.Cast, 1))
         {
             var varType = ParseVariableType();
 
+            var castToken = Consume()!.Value;
+
+            if (castToken.Type != TokenType.Cast)
+                throw new InvalidOperationException();
+
             if (!varType.HasValue)
             {
-                ErrorInvalid("variable type after 'cast'", castToken!.Value.LineNumber);
+                ErrorInvalid("variable type before 'cast'", castToken.LineNumber);
             }
 
             var expression = ParseExpression();
 
             if (expression == null)
             {
-                ErrorInvalid("expression for 'cast'", castToken!.Value.LineNumber);
+                ErrorInvalid("expression after 'cast'", castToken.LineNumber);
             }
 
             return new NodeExpression { Type = NodeExpressionType.Cast, Cast = new NodeExprCast { CastType = varType!.Value, Expression = expression! } };
