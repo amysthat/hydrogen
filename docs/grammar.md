@@ -48,6 +48,8 @@ $$
     [\text{varType}] &\to \begin{cases}
                         \text{i64} \\
                         \text{u64} \\
+                        \text{i16} \\
+                        \text{u16} \\
                         \text{byte} \\
                         \end{cases} \\
 

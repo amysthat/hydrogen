@@ -526,6 +526,10 @@ public class Parser
                 return VariableType.UnsignedInteger64;
             case TokenType.SignedInteger64:
                 return VariableType.SignedInteger64;
+            case TokenType.UnsignedInteger16:
+                return VariableType.UnsignedInteger16;
+            case TokenType.SignedInteger16:
+                return VariableType.SignedInteger16;
             case TokenType.Byte:
                 return VariableType.Byte;
         }

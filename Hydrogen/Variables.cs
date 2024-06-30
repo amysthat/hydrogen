@@ -1,6 +1,5 @@
 using Hydrogen.Generation;
 using Hydrogen.Parsing;
-using Hydrogen.Tokenization;
 
 namespace Hydrogen;
 
@@ -8,6 +7,8 @@ public enum VariableType
 {
     UnsignedInteger64,
     SignedInteger64,
+    SignedInteger16,
+    UnsignedInteger16,
     Byte,
 }
 
@@ -36,6 +37,12 @@ public static class Variables
                         generator.output += $"    movzx rax, al\n";
                         generator.Push("rax");
                         return;
+                    case VariableType.SignedInteger16:
+                    case VariableType.UnsignedInteger16:
+                        generator.Pop("rax ; Cast i64 to 16 bits");
+                        generator.output += $"    movzx rax, ax\n";
+                        generator.Push("rax");
+                        return;
                 }
                 break;
             case VariableType.UnsignedInteger64:
@@ -45,6 +52,50 @@ public static class Variables
                         return;
                     case VariableType.Byte:
                         generator.Pop("rax ; Cast u64 to byte");
+                        generator.output += $"    movzx rax, al\n";
+                        generator.Push("rax");
+                        return;
+                    case VariableType.SignedInteger16:
+                    case VariableType.UnsignedInteger16:
+                        generator.Pop("rax ; Cast u64 to 16 bits");
+                        generator.output += $"    movzx rax, ax\n";
+                        generator.Push("rax");
+                        return;
+                }
+                break;
+            case VariableType.Byte:
+                switch (targetType)
+                {
+                    case VariableType.SignedInteger64:
+                    case VariableType.UnsignedInteger64:
+                    case VariableType.SignedInteger16:
+                    case VariableType.UnsignedInteger16:
+                        return;
+                }
+                break;
+            case VariableType.SignedInteger16:
+                switch (targetType)
+                {
+                    case VariableType.SignedInteger64:
+                    case VariableType.UnsignedInteger64:
+                    case VariableType.UnsignedInteger16:
+                        return;
+                    case VariableType.Byte:
+                        generator.Pop("rax ; Cast i16 to byte");
+                        generator.output += $"    movzx rax, al\n";
+                        generator.Push("rax");
+                        return;
+                }
+                break;
+            case VariableType.UnsignedInteger16:
+                switch (targetType)
+                {
+                    case VariableType.SignedInteger64:
+                    case VariableType.UnsignedInteger64:
+                    case VariableType.UnsignedInteger16:
+                        return;
+                    case VariableType.Byte:
+                        generator.Pop("rax ; Cast u16 to byte");
                         generator.output += $"    movzx rax, al\n";
                         generator.Push("rax");
                         return;
@@ -61,6 +112,8 @@ public static class Variables
         {
             case VariableType.SignedInteger64:
             case VariableType.UnsignedInteger64:
+            case VariableType.SignedInteger16:
+            case VariableType.UnsignedInteger16:
             case VariableType.Byte:
                 return true;
 
@@ -74,6 +127,8 @@ public static class Variables
         switch (type)
         {
             case VariableType.SignedInteger64:
+                return true;
+            case VariableType.SignedInteger16:
                 return true;
 
             default:
@@ -90,6 +145,11 @@ public static class Variables
         {
             generator.output += $"    mov al, {integer.Int_Lit.Value} ; IntLit expression for type Byte\n";
             generator.output += $"    movzx {register}, al\n";
+        }
+        else if (type == VariableType.SignedInteger16 || type == VariableType.UnsignedInteger16)
+        {
+            generator.output += $"    mov ax, {integer.Int_Lit.Value} ; IntLit expression for type 16 bits\n";
+            generator.output += $"    movzx {register}, ax\n";
         }
         else
         {
@@ -109,6 +169,10 @@ public static class Variables
         if (type == VariableType.Byte)
         {
             generator.output += $"    movzx rax, al ; Cap integer to byte limits\n";
+        }
+        else if (type == VariableType.SignedInteger16 || type == VariableType.UnsignedInteger16)
+        {
+            generator.output += $"    movzx rax, ax ; Cap integer to 16 bit limits\n";
         }
         generator.Push("rax");
     }

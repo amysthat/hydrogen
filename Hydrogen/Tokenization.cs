@@ -32,6 +32,8 @@ public enum TokenType
     Cast,
     SignedInteger64,
     UnsignedInteger64,
+    SignedInteger16,
+    UnsignedInteger16,
     Byte,
 }
 
@@ -90,6 +92,10 @@ public class Tokenizer
                     tokens.Add(PrepareToken(TokenType.SignedInteger64, lineCount));
                 else if (buf == "u64")
                     tokens.Add(PrepareToken(TokenType.UnsignedInteger64, lineCount));
+                else if (buf == "i16")
+                    tokens.Add(PrepareToken(TokenType.SignedInteger16, lineCount));
+                else if (buf == "u16")
+                    tokens.Add(PrepareToken(TokenType.UnsignedInteger16, lineCount));
                 else if (buf == "byte")
                     tokens.Add(PrepareToken(TokenType.Byte, lineCount));
                 else // Identifier

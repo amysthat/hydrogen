@@ -266,7 +266,7 @@ public class Generator
         }
 
         output += "    mov rax, 60 ; End of program\n";
-        output += "    mov rdi, 0\n";
+        output += "    xor rdi, rdi\n";
         output += "    syscall\n";
 
         return output;
