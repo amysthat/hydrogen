@@ -32,6 +32,13 @@ public class Generator
         {
             case NodeTermType.Integer:
                 var variableType = Variables.IsInteger(suggestionType) ? suggestionType : VariableType.SignedInteger64;
+
+                if (!Variables.IsSignedInteger(variableType) && term.Integer.Int_Lit.Value!.StartsWith('-'))
+                {
+                    Console.Error.WriteLine("Negative value given for unsigned integer.");
+                    Environment.Exit(1);
+                }
+
                 Variables.MoveIntegerToRegister(this, "rax", term.Integer, variableType);
                 Push("rax"); // Push the literal to the top of the stack
                 return variableType;

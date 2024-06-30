@@ -1,5 +1,5 @@
-x : i16 = 20000;
+xvar : u64 = 151;
 
-y : u16 = u16 cast x * 2;
+yvar : u32 = u32 cast xvar;
 
-exit byte cast y;
+exit byte cast yvar;

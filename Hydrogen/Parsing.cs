@@ -91,6 +91,7 @@ public enum NodeStatementType
 public struct NodeStatement
 {
     public NodeStatementType Type;
+
     public NodeStmtExit Exit;
     public NodeStmtVar Variable;
     public NodeStmtAssign Assign;
@@ -530,6 +531,10 @@ public class Parser
                 return VariableType.UnsignedInteger16;
             case TokenType.SignedInteger16:
                 return VariableType.SignedInteger16;
+            case TokenType.SignedInteger32:
+                return VariableType.SignedInteger32;
+            case TokenType.UnsignedInteger32:
+                return VariableType.UnsignedInteger32;
             case TokenType.Byte:
                 return VariableType.Byte;
         }
@@ -539,12 +544,14 @@ public class Parser
 
     private void ErrorExpected(string message, int line)
     {
+        Console.ForegroundColor = ConsoleColor.Red;
         Console.Error.WriteLine($"Parse Error: Expected {message} on line {line}.");
         Environment.Exit(1);
     }
 
     private void ErrorInvalid(string message, int line)
     {
+        Console.ForegroundColor = ConsoleColor.Red;
         Console.Error.WriteLine($"Parse Error: Invalid {message} on line {line}.");
         Environment.Exit(1);
     }

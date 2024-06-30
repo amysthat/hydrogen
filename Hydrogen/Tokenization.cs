@@ -34,6 +34,8 @@ public enum TokenType
     UnsignedInteger64,
     SignedInteger16,
     UnsignedInteger16,
+    SignedInteger32,
+    UnsignedInteger32,
     Byte,
 }
 
@@ -96,6 +98,10 @@ public class Tokenizer
                     tokens.Add(PrepareToken(TokenType.SignedInteger16, lineCount));
                 else if (buf == "u16")
                     tokens.Add(PrepareToken(TokenType.UnsignedInteger16, lineCount));
+                else if (buf == "i32")
+                    tokens.Add(PrepareToken(TokenType.SignedInteger32, lineCount));
+                else if (buf == "u32")
+                    tokens.Add(PrepareToken(TokenType.UnsignedInteger32, lineCount));
                 else if (buf == "byte")
                     tokens.Add(PrepareToken(TokenType.Byte, lineCount));
                 else // Identifier
@@ -192,6 +198,7 @@ public class Tokenizer
                 }
             }
 
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.Error.WriteLine($"Invalid keyword or token '{peekedChar}' on line {lineCount}.");
             Environment.Exit(1);
         }

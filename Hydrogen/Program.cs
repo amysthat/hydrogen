@@ -11,11 +11,18 @@ internal class Program
     {
         if (args.Length == 0)
         {
+#if DEBUG
             args = ["../user/test.hy"];
-            // Console.ForegroundColor = ConsoleColor.Red;
-            // Console.WriteLine("Incorrect usage. Correct usage:\n -> hydrogen <input.hy>");
-            // return 1;
+#elif RELEASE
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Incorrect usage. Correct usage:\n -> hydrogen <input.hy>");
+            return 1;
+#endif
         }
+
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine("hydrogen Compiler - working beta 0.1");
+        Console.ForegroundColor = ConsoleColor.Gray;
 
         if (!File.Exists(args[0]))
         {
@@ -71,10 +78,14 @@ internal class Program
         Console.WriteLine("Compiling...");
         Compile();
 
+        Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine($"Compilation finished. Took {(DateTime.Now - startTime).TotalMilliseconds} ms.");
+        Console.ForegroundColor = ConsoleColor.Gray;
 
+#if RELEASE
         if (!args.Contains("/nocleanup"))
             Cleanup();
+#endif
 
         return 0;
     }

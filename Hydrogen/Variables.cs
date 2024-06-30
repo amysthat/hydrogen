@@ -9,6 +9,8 @@ public enum VariableType
     SignedInteger64,
     SignedInteger16,
     UnsignedInteger16,
+    SignedInteger32,
+    UnsignedInteger32,
     Byte,
 }
 
@@ -27,38 +29,28 @@ public static class Variables
 
         switch (castType)
         {
+            case VariableType.UnsignedInteger64:
             case VariableType.SignedInteger64:
                 switch (targetType)
                 {
                     case VariableType.UnsignedInteger64:
-                        return;
-                    case VariableType.Byte:
-                        generator.Pop("rax ; Cast i64 to byte");
-                        generator.output += $"    movzx rax, al\n";
-                        generator.Push("rax");
-                        return;
-                    case VariableType.SignedInteger16:
-                    case VariableType.UnsignedInteger16:
-                        generator.Pop("rax ; Cast i64 to 16 bits");
-                        generator.output += $"    movzx rax, ax\n";
-                        generator.Push("rax");
-                        return;
-                }
-                break;
-            case VariableType.UnsignedInteger64:
-                switch (targetType)
-                {
                     case VariableType.SignedInteger64:
                         return;
                     case VariableType.Byte:
-                        generator.Pop("rax ; Cast u64 to byte");
+                        generator.Pop("rax ; Cast 64 bits to byte");
                         generator.output += $"    movzx rax, al\n";
                         generator.Push("rax");
                         return;
                     case VariableType.SignedInteger16:
                     case VariableType.UnsignedInteger16:
-                        generator.Pop("rax ; Cast u64 to 16 bits");
+                        generator.Pop("rax ; Cast 64 bits to 16 bits");
                         generator.output += $"    movzx rax, ax\n";
+                        generator.Push("rax");
+                        return;
+                    case VariableType.SignedInteger32:
+                    case VariableType.UnsignedInteger32:
+                        generator.Pop("rax ; Cast 64 bits to 32 bits");
+                        generator.output += $"    mov eax, eax ; Truncate rax to 32 bits\n";
                         generator.Push("rax");
                         return;
                 }
@@ -70,32 +62,46 @@ public static class Variables
                     case VariableType.UnsignedInteger64:
                     case VariableType.SignedInteger16:
                     case VariableType.UnsignedInteger16:
+                    case VariableType.SignedInteger32:
+                    case VariableType.UnsignedInteger32:
                         return;
                 }
                 break;
             case VariableType.SignedInteger16:
-                switch (targetType)
-                {
-                    case VariableType.SignedInteger64:
-                    case VariableType.UnsignedInteger64:
-                    case VariableType.UnsignedInteger16:
-                        return;
-                    case VariableType.Byte:
-                        generator.Pop("rax ; Cast i16 to byte");
-                        generator.output += $"    movzx rax, al\n";
-                        generator.Push("rax");
-                        return;
-                }
-                break;
             case VariableType.UnsignedInteger16:
                 switch (targetType)
                 {
                     case VariableType.SignedInteger64:
                     case VariableType.UnsignedInteger64:
+                    case VariableType.SignedInteger32:
+                    case VariableType.UnsignedInteger32:
                     case VariableType.UnsignedInteger16:
+                    case VariableType.SignedInteger16:
                         return;
                     case VariableType.Byte:
-                        generator.Pop("rax ; Cast u16 to byte");
+                        generator.Pop("rax ; Cast 16 bits to byte");
+                        generator.output += $"    movzx rax, al\n";
+                        generator.Push("rax");
+                        return;
+                }
+                break;
+            case VariableType.SignedInteger32:
+            case VariableType.UnsignedInteger32:
+                switch (targetType)
+                {
+                    case VariableType.SignedInteger64:
+                    case VariableType.UnsignedInteger64:
+                    case VariableType.SignedInteger32:
+                    case VariableType.UnsignedInteger32:
+                        return;
+                    case VariableType.SignedInteger16:
+                    case VariableType.UnsignedInteger16:
+                        generator.Pop("rax ; Cast 32 bits to 16 bits");
+                        generator.output += $"    movzx rax, ax\n";
+                        generator.Push("rax");
+                        return;
+                    case VariableType.Byte:
+                        generator.Pop("rax ; Cast 32 bits to byte");
                         generator.output += $"    movzx rax, al\n";
                         generator.Push("rax");
                         return;
@@ -114,6 +120,8 @@ public static class Variables
             case VariableType.UnsignedInteger64:
             case VariableType.SignedInteger16:
             case VariableType.UnsignedInteger16:
+            case VariableType.SignedInteger32:
+            case VariableType.UnsignedInteger32:
             case VariableType.Byte:
                 return true;
 
@@ -129,6 +137,8 @@ public static class Variables
             case VariableType.SignedInteger64:
                 return true;
             case VariableType.SignedInteger16:
+                return true;
+            case VariableType.SignedInteger32:
                 return true;
 
             default:
@@ -150,6 +160,11 @@ public static class Variables
         {
             generator.output += $"    mov ax, {integer.Int_Lit.Value} ; IntLit expression for type 16 bits\n";
             generator.output += $"    movzx {register}, ax\n";
+        }
+        else if (type == VariableType.SignedInteger32 || type == VariableType.UnsignedInteger32)
+        {
+            generator.output += $"    xor rax, rax ; IntLit expression for type 32 bits\n";
+            generator.output += $"    mov eax, {integer.Int_Lit.Value}\n";
         }
         else
         {
