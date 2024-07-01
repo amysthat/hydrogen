@@ -6,24 +6,47 @@ public class Generator
 {
     private NodeProgram program;
     public string output;
-    private ulong StackSize;
     private int labelCount;
-    private readonly Map<string, Variable> variables;
-    private readonly List<Scope> scopes;
+    private Scope workingScope;
 
-    public struct Scope
+    public class Scope
     {
-        public ulong baseStackSize;
-        public int baseVariableCount;
+        public ulong CurrentStackSize;
+        public readonly Map<string, Variable> variables = new();
+
+        public required Scope Parent;
+
+        public ulong DefineVariable(string variableName, VariableType type)
+        {
+            var variablePosition = CurrentStackSize;
+
+            var variable = new Variable
+            {
+                Type = type,
+                BaseStackDifference = variablePosition,
+                Size = Variables.GetSize(type),
+                Owner = this,
+            };
+
+            variables.Add(variableName, variable);
+
+            CurrentStackSize += variable.Size;
+
+            if (CurrentStackSize > 128)
+            {
+                throw new OutOfMemoryException("Scope size reached more than 128.");
+            }
+
+            return variablePosition;
+        }
     }
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     public Generator(NodeProgram program)
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
     {
         this.program = program;
         output = string.Empty;
-        StackSize = 0;
-        variables = new Map<string, Variable>();
-        scopes = [];
     }
 
     private VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
@@ -31,33 +54,41 @@ public class Generator
         switch (term.Type)
         {
             case NodeTermType.Integer:
-                var variableType = Variables.IsInteger(suggestionType) ? suggestionType : VariableType.SignedInteger64;
+                var integerType = Variables.IsInteger(suggestionType) ? suggestionType : VariableType.SignedInteger64;
 
-                if (!Variables.IsSignedInteger(variableType) && term.Integer.Int_Lit.Value!.StartsWith('-'))
+                if (!Variables.IsSignedInteger(integerType) && term.Integer.Int_Lit.Value!.StartsWith('-'))
                 {
                     Console.Error.WriteLine("Negative value given for unsigned integer.");
                     Environment.Exit(1);
                 }
 
-                Variables.MoveIntegerToRegister(this, "rax", term.Integer, variableType);
-                Push("rax"); // Push the literal to the top of the stack
-                return variableType;
+                Push(Variables.MoveIntegerToRegister(this, term.Integer, integerType));
+                return integerType;
 
             case NodeTermType.Identifier:
                 string identifier = term.Identifier.Identifier.Value!;
 
-                if (!variables.ContainsKey(identifier))
+                var variable = GetVariable(identifier);
+
+                if (!variable.HasValue)
                 {
                     Console.Error.WriteLine($"Variable '{identifier}' has not been declared.");
                     Environment.Exit(1);
                 }
 
-                var variable = variables.GetValueByKey(identifier);
+                var variablePosition = GetVariablePositionOnStackRelativeToWorkingScope(identifier);
+                var assemblyString = CastVariablePositionRelativeToWorkingSpaceToAssemblyString(variablePosition);
 
-                var lastStackPosition = StackSize - 8;
-
-                Push($"QWORD [rsp + {lastStackPosition - variable.StackLocation}] ; {identifier} variable");
-                return variable.Type;
+                if (variable!.Value.Type == VariableType.SignedInteger32 || variable!.Value.Type == VariableType.UnsignedInteger32) // I hate assembly
+                {
+                    output += $"    mov eax, DWORD [{assemblyString}] ; 32 bit {identifier} variable\n";
+                    Push("rax");
+                }
+                else
+                {
+                    Push($"{Variables.GetAsmPointerSizeForIntegerType(variable!.Value.Type)} [{assemblyString}] ; {identifier} variable");
+                }
+                return variable!.Value.Type;
 
             case NodeTermType.Parenthesis:
                 return GenerateExpression(term.Parenthesis.Expression, suggestionType);
@@ -117,22 +148,25 @@ public class Generator
             Environment.Exit(1);
         }
 
-        Pop("rbx ; Binary expression"); // Pop the second expression
-        Pop("rax"); // Pop the first expression
-        if (type == NodeBinaryExpressionType.Add) output += "    add rax, rbx\n";
-        if (type == NodeBinaryExpressionType.Subtract) output += "    sub rax, rbx\n";
+        var aRegister = Variables.GetARegisterForIntegerType(leftExprType);
+        var bRegister = Variables.GetBRegisterForIntegerType(leftExprType);
+
+        Pop($"{aRegister} ; Binary expression"); // Pop the second expression
+        Pop(bRegister); // Pop the first expression
+        if (type == NodeBinaryExpressionType.Add) output += $"    add {aRegister}, {bRegister}\n";
+        if (type == NodeBinaryExpressionType.Subtract) output += $"    sub {aRegister}, {bRegister}\n";
         if (Variables.IsSignedInteger(leftExprType))
         {
-            if (type == NodeBinaryExpressionType.Multiply) output += "    imul rbx\n";
-            if (type == NodeBinaryExpressionType.Divide) output += "    idiv rbx\n";
+            if (type == NodeBinaryExpressionType.Multiply) output += $"    imul {bRegister}\n";
+            if (type == NodeBinaryExpressionType.Divide) output += $"    idiv {bRegister}\n";
         }
         else
         {
-            if (type == NodeBinaryExpressionType.Multiply) output += "    mul rbx\n";
-            if (type == NodeBinaryExpressionType.Divide) output += "    div rbx\n";
+            if (type == NodeBinaryExpressionType.Multiply) output += $"    mul {bRegister}\n";
+            if (type == NodeBinaryExpressionType.Divide) output += $"    div {bRegister}\n";
         }
-        Push("rax"); // Push the output
-        Variables.CapInteger(this, leftExprType);
+        Push(aRegister);
+
         return leftExprType;
     }
 
@@ -157,7 +191,7 @@ public class Generator
             case NodeStatementType.Variable:
                 string identifier = statement.Variable.Identifier.Value!;
 
-                if (variables.ContainsKey(identifier))
+                if (DoesVariableExist(identifier))
                 {
                     Console.Error.WriteLine($"Variable '{identifier}' is already in use.");
                     Environment.Exit(1);
@@ -168,6 +202,7 @@ public class Generator
                 output += $"    ; Define {identifier} variable of type {variableType}\n";
 
                 var expressionType = GenerateExpression(statement.Variable.ValueExpression, variableType);
+                var variableARegister = Variables.GetARegisterForIntegerType(expressionType);
 
                 if (variableType != expressionType)
                 {
@@ -175,50 +210,52 @@ public class Generator
                     Environment.Exit(1);
                 }
 
-                variables.Add(identifier, new Variable
-                {
-                    StackLocation = StackSize - 8, // Already pushed it with GenerateExpression and therefore -8
-                    Type = variableType,
-                });
+                ulong relativePosition = workingScope.DefineVariable(identifier, variableType);
+
+                if (variableARegister[0] == 'e') // I hate assembly
+                    variableARegister = "r" + variableARegister[1..];
+
+                Pop(variableARegister);
+                output += $"    mov [rbp - {relativePosition}], {variableARegister}\n";
                 break;
 
             case NodeStatementType.Assign:
                 string assignIdentifier = statement.Assign.Identifier.Value!;
 
-                if (!variables.ContainsKey(assignIdentifier))
+                var variable = GetVariable(assignIdentifier);
+
+                if (!variable.HasValue)
                 {
                     Console.Error.WriteLine($"Variable '{assignIdentifier}' has not been declared yet.");
                     Environment.Exit(1);
                 }
 
-                var variable = variables.GetValueByKey(assignIdentifier);
+                output += $"    ; Assign {assignIdentifier}";
+                var assignExprType = GenerateExpression(statement.Assign.ValueExpression, variable!.Value.Type);
 
-                var lastStackPosition = StackSize - 8;
-
-                output += $"    ; Assign {assignIdentifier}\n";
-
-                var assignExprType = GenerateExpression(statement.Assign.ValueExpression, variable.Type);
-
-                if (variable.Type != assignExprType)
+                if (variable!.Value.Type != assignExprType)
                 {
-                    Console.Error.WriteLine($"Type mismatch on variable assignment. ({variable.Type}) {assignIdentifier} != {assignExprType}");
+                    Console.Error.WriteLine($"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type}) != {assignExprType}");
                     Environment.Exit(1);
                 }
 
-                Pop("rax");
-                output += $"    mov QWORD [rsp + {lastStackPosition - variable.StackLocation}], rax\n";
+                long variablePosition = GetVariablePositionOnStackRelativeToWorkingScope(assignIdentifier);
+                var assemblyAssignString = CastVariablePositionRelativeToWorkingSpaceToAssemblyString(variablePosition);
+
+                Pop($"{assemblyAssignString}");
                 break;
 
             case NodeStatementType.Scope:
                 GenerateScope(statement.Scope);
                 break;
 
-            case NodeStatementType.If:
+            case NodeStatementType.If: // TODO: Fix register usage later
                 var ifStatement = statement.If;
 
                 var finalLabelIndex = labelCount + ifStatement.Elifs.Count + (ifStatement.Else.HasValue ? 1 : 0);
 
                 GenerateExpression(ifStatement.This.Expression, VariableType.SignedInteger64);
+                output += "    xor rax, rax ; Clear out rax for if statement";
                 Pop("rax");
                 output += $"    cmp rax, 0\n";
                 output += $"    je label{labelCount}\n";
@@ -255,22 +292,26 @@ public class Generator
 
     private void GenerateScope(NodeScope scope)
     {
-        BeginScope();
+        BeginNewWorkingScope();
         foreach (var statement in scope.Statements)
         {
             GenerateStatement(statement);
         }
-        EndScope();
+        EndWorkingScope();
     }
 
     public string GenerateProgram()
     {
         output = "section .text\n    global _start\n\n_start:\n";
 
+        BeginNewWorkingScope();
+
         foreach (var statement in program.Statements)
         {
             GenerateStatement(statement);
         }
+
+        EndWorkingScope();
 
         output += "    mov rax, 60 ; End of program\n";
         output += "    xor rdi, rdi\n";
@@ -279,44 +320,107 @@ public class Generator
         return output;
     }
 
-    private void BeginScope()
+    private void BeginNewWorkingScope()
     {
-        scopes.Add(new Scope { baseStackSize = StackSize, baseVariableCount = variables.Count });
+        output += "    ; Begin new scope\n";
+        output += "    push rbp ; Previous base stack pointer\n";
+        output += "    mov rbp, rsp\n";
+        output += "    sub rsp, 128 ; Allocate 128 bytes for scope\n";
 
-        output += "    ; Start scope\n";
+        var scope = new Scope
+        {
+            Parent = workingScope
+        };
+
+        workingScope = scope;
     }
 
-    private void EndScope()
+    private void EndWorkingScope()
     {
-        ulong stack_size_to_be_freed = StackSize - scopes[^1].baseStackSize;
-        int variable_count_to_be_freed = variables.Count - scopes[^1].baseVariableCount;
+        output += "    leave ; Revert stack pointers\n";
+        output += "    ; End of scope\n";
 
-        output += $"    add rsp, {stack_size_to_be_freed} ; End scope with {variable_count_to_be_freed} variable(s)\n";
-        StackSize -= stack_size_to_be_freed;
+        workingScope = workingScope.Parent;
+    }
 
-        variables.PopBack(variable_count_to_be_freed);
-        scopes.RemoveAt(scopes.Count - 1);
+    private string CastVariablePositionRelativeToWorkingSpaceToAssemblyString(long position)
+    {
+        if (position < 0)
+            return $"rbp + {-position}";
+        else if (position > 0)
+            return $"rbp - {position}";
+        else
+            return "rbp";
+    }
+
+    private long GetVariablePositionOnStackRelativeToWorkingScope(string variableName)
+    {
+        long stackDifference = 0;
+
+        Scope currentScope = workingScope;
+
+        while (currentScope != null)
+        {
+            if (currentScope.variables.ContainsKey(variableName))
+            {
+                stackDifference += (long)currentScope.variables.GetValueByKey(variableName).BaseStackDifference;
+                return stackDifference;
+            }
+
+            stackDifference -= (long)currentScope.CurrentStackSize;
+            currentScope = currentScope.Parent;
+        }
+
+        throw new VariableNotFoundException(variableName);
+    }
+
+    private Variable? GetVariable(string variableName)
+    {
+        Scope currentScope = workingScope;
+
+        while (currentScope != null)
+        {
+            if (currentScope.variables.ContainsKey(variableName))
+            {
+                return currentScope.variables.GetValueByKey(variableName);
+            }
+
+            currentScope = currentScope.Parent;
+        }
+
+        return null;
+    }
+
+    private bool DoesVariableExist(string variableName)
+    {
+        Scope currentScope = workingScope;
+
+        while (currentScope != null)
+        {
+            if (currentScope.variables.ContainsKey(variableName))
+            {
+                return true;
+            }
+
+            currentScope = currentScope.Parent;
+        }
+
+        return false;
     }
 
     public void Push(string register)
     {
-        ThrowIfRegisterIsnt64Bit(register);
+        if (register[0] == 'e') // I hate assembly
+            register = "r" + register[1..];
 
         output += $"    push {register}\n";
-        StackSize += 8;
     }
 
     public void Pop(string register)
     {
-        ThrowIfRegisterIsnt64Bit(register);
+        if (register[0] == 'e') // I hate assembly
+            register = "r" + register[1..];
 
         output += $"    pop {register}\n";
-        StackSize -= 8;
-    }
-
-    private void ThrowIfRegisterIsnt64Bit(string register) // Self-protection
-    {
-        if (register[0] != 'r' && register[0] != 'Q') // Q for QWORD [rsp]
-            throw new InvalidOperationException($"Non 64-bit integers are not allowed: {register}");
     }
 }

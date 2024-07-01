@@ -50,6 +50,8 @@ $$
                         \text{u64} \\
                         \text{i16} \\
                         \text{u16} \\
+                        \text{i32} \\
+                        \text{u32} \\
                         \text{byte} \\
                         \end{cases} \\
 

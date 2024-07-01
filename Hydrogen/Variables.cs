@@ -16,8 +16,17 @@ public enum VariableType
 
 public struct Variable
 {
-    public ulong StackLocation;
+    public ulong BaseStackDifference;
+    public ulong Size;
+
     public VariableType Type;
+
+    public required Generator.Scope Owner;
+}
+
+public class VariableNotFoundException : Exception
+{
+    public VariableNotFoundException(string variable) : base(variable + " was not found") { }
 }
 
 public static class Variables
@@ -146,49 +155,79 @@ public static class Variables
         }
     }
 
-    public static void MoveIntegerToRegister(Generator generator, string register, NodeTermInteger integer, VariableType type)
+    /// <summary>
+    /// Moves an Integer to the appropriate register.
+    /// </summary>
+    /// <returns>Used register</returns>
+    public static string MoveIntegerToRegister(Generator generator, NodeTermInteger integer, VariableType type)
     {
         if (!IsInteger(type))
             throw new InvalidOperationException();
 
-        if (type == VariableType.Byte)
+        var register = GetARegisterForIntegerType(type);
+
+        if (type == VariableType.UnsignedInteger64 || type == VariableType.SignedInteger64)
         {
-            generator.output += $"    mov al, {integer.Int_Lit.Value} ; IntLit expression for type Byte\n";
-            generator.output += $"    movzx {register}, al\n";
+            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for 64 bits\n";
         }
-        else if (type == VariableType.SignedInteger16 || type == VariableType.UnsignedInteger16)
+        else if (type == VariableType.UnsignedInteger32 || type == VariableType.SignedInteger32) // I hate you assembly
         {
-            generator.output += $"    mov ax, {integer.Int_Lit.Value} ; IntLit expression for type 16 bits\n";
-            generator.output += $"    movzx {register}, ax\n";
-        }
-        else if (type == VariableType.SignedInteger32 || type == VariableType.UnsignedInteger32)
-        {
-            generator.output += $"    xor rax, rax ; IntLit expression for type 32 bits\n";
-            generator.output += $"    mov eax, {integer.Int_Lit.Value}\n";
+            generator.output += $"    mov {register}, {integer.Int_Lit.Value}\n";
         }
         else
         {
-            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; IntLit expression for type {type}\n";
+            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for {type}\n";
+            generator.output += $"    movzx rax, {register}\n";
         }
+
+        return register;
     }
 
-    public static void CapInteger(Generator generator, VariableType type)
+    public static ulong GetSize(VariableType type) => type switch
     {
-        if (!IsInteger(type))
-            throw new InvalidOperationException();
+        VariableType.UnsignedInteger64 => 8,
+        VariableType.SignedInteger64 => 8,
+        VariableType.UnsignedInteger32 => 4,
+        VariableType.SignedInteger32 => 4,
+        VariableType.UnsignedInteger16 => 2,
+        VariableType.SignedInteger16 => 2,
+        VariableType.Byte => 1,
+        _ => throw new Exception($"Unknown variable type size: {type}"),
+    };
 
-        if (type == VariableType.UnsignedInteger64 || type == VariableType.SignedInteger64)
-            return; // Nothing to cap
+    public static string GetARegisterForIntegerType(VariableType type) => type switch
+    {
+        VariableType.UnsignedInteger64 => "rax",
+        VariableType.SignedInteger64 => "rax",
+        VariableType.UnsignedInteger32 => "eax",
+        VariableType.SignedInteger32 => "eax",
+        VariableType.UnsignedInteger16 => "ax",
+        VariableType.SignedInteger16 => "ax",
+        VariableType.Byte => "al",
+        _ => throw new Exception($"Unknown integer variable type: {type}"),
+    };
 
-        generator.Pop("rax");
-        if (type == VariableType.Byte)
-        {
-            generator.output += $"    movzx rax, al ; Cap integer to byte limits\n";
-        }
-        else if (type == VariableType.SignedInteger16 || type == VariableType.UnsignedInteger16)
-        {
-            generator.output += $"    movzx rax, ax ; Cap integer to 16 bit limits\n";
-        }
-        generator.Push("rax");
-    }
+    public static string GetBRegisterForIntegerType(VariableType type) => type switch
+    {
+        VariableType.UnsignedInteger64 => "rbx",
+        VariableType.SignedInteger64 => "rbx",
+        VariableType.UnsignedInteger32 => "ebx",
+        VariableType.SignedInteger32 => "ebx",
+        VariableType.UnsignedInteger16 => "bx",
+        VariableType.SignedInteger16 => "bx",
+        VariableType.Byte => "bl",
+        _ => throw new Exception($"Unknown integer variable type: {type}"),
+    };
+
+    public static string GetAsmPointerSizeForIntegerType(VariableType type) => type switch
+    {
+        VariableType.UnsignedInteger64 => "qword",
+        VariableType.SignedInteger64 => "qword",
+        VariableType.UnsignedInteger32 => "dword",
+        VariableType.SignedInteger32 => "dword",
+        VariableType.UnsignedInteger16 => "word",
+        VariableType.SignedInteger16 => "word",
+        VariableType.Byte => "byte",
+        _ => throw new Exception($"Unknown integer variable type: {type}"),
+    };
 }
