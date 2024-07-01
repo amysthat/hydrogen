@@ -79,15 +79,12 @@ public class Generator
                 var variablePosition = GetVariablePositionOnStackRelativeToWorkingScope(identifier);
                 var assemblyString = CastVariablePositionRelativeToWorkingSpaceToAssemblyString(variablePosition);
 
-                if (variable!.Value.Type == VariableType.SignedInteger32 || variable!.Value.Type == VariableType.UnsignedInteger32) // I hate assembly
-                {
-                    output += $"    mov eax, DWORD [{assemblyString}] ; 32 bit {identifier} variable\n";
-                    Push("rax");
-                }
-                else
-                {
-                    Push($"{Variables.GetAsmPointerSizeForIntegerType(variable!.Value.Type)} [{assemblyString}] ; {identifier} variable");
-                }
+                var aRegister = Variables.GetARegisterForIntegerType(variable!.Value.Type);
+                var asmPointerSize = Variables.GetAsmPointerSizeForIntegerType(variable!.Value.Type);
+
+                output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type} {identifier} variable\n";
+                Push("rax");
+
                 return variable!.Value.Type;
 
             case NodeTermType.Parenthesis:
@@ -151,8 +148,8 @@ public class Generator
         var aRegister = Variables.GetARegisterForIntegerType(leftExprType);
         var bRegister = Variables.GetBRegisterForIntegerType(leftExprType);
 
-        Pop($"{aRegister} ; Binary expression"); // Pop the second expression
-        Pop(bRegister); // Pop the first expression
+        Pop($"{bRegister} ; Binary expression"); // Pop the second expression
+        Pop(aRegister); // Pop the first expression
         if (type == NodeBinaryExpressionType.Add) output += $"    add {aRegister}, {bRegister}\n";
         if (type == NodeBinaryExpressionType.Subtract) output += $"    sub {aRegister}, {bRegister}\n";
         if (Variables.IsSignedInteger(leftExprType))
@@ -410,17 +407,37 @@ public class Generator
 
     public void Push(string register)
     {
-        if (register[0] == 'e') // I hate assembly
-            register = "r" + register[1..];
-
-        output += $"    push {register}\n";
+        output += $"    push {Force64BitRegister(register)}\n";
     }
 
     public void Pop(string register)
     {
-        if (register[0] == 'e') // I hate assembly
-            register = "r" + register[1..];
+        output += $"    pop {Force64BitRegister(register)}\n";
+    }
 
-        output += $"    pop {register}\n";
+    private string Force64BitRegister(string register) // I hate assembly with a passion
+    {
+        if (!register.Contains(' '))
+            return Force64BitRegisterLone(register);
+
+        var firstHalfIndex = register.IndexOf(' ');
+        var workingRegister = register[..firstHalfIndex];
+
+        if (workingRegister.Length > 3)
+            return register; // Don't touch the special ones
+
+        workingRegister = Force64BitRegisterLone(workingRegister);
+
+        return workingRegister + register[firstHalfIndex..];
+    }
+
+    private string Force64BitRegisterLone(string register) // I hate assembly with a passion
+    {
+        if (register.Contains('a'))
+            register = "rax";
+        else if (register.Contains('b'))
+            register = "rbx";
+
+        return register;
     }
 }
