@@ -81,12 +81,16 @@ internal class Program
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine($"Compilation finished. Took {(DateTime.Now - startTime).TotalMilliseconds} ms.");
-        Console.ForegroundColor = ConsoleColor.Gray;
 
 #if RELEASE
         if (!args.Contains("/nocleanup"))
             Cleanup();
 #endif
+
+        Console.WriteLine();
+        int exitCode = RunCommand("./out");
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        Console.WriteLine($"Program exited with exit code {exitCode}.");
 
         return 0;
     }
@@ -121,7 +125,7 @@ internal class Program
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("File cleanup failed.");
-            Console.ForegroundColor = ConsoleColor.White;
+            Console.ForegroundColor = ConsoleColor.Gray;
         }
     }
 
