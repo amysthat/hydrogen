@@ -1,5 +1,7 @@
-xvar : u64 = 151;
+xvar : byte = 151;
 
-yvar : u32 = u32 cast xvar;
+yvar : byte = xvar;
 
-exit byte cast yvar;
+zvar : byte = 215;
+
+exit zvar - yvar;

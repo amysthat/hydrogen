@@ -12,7 +12,8 @@ internal class Program
         if (args.Length == 0)
         {
 #if DEBUG
-            args = ["../user/test.hy"];
+            args = ["user/test.hy"];
+            Directory.SetCurrentDirectory(Path.Combine(Directory.GetCurrentDirectory(), ".."));
 #elif RELEASE
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Incorrect usage. Correct usage:\n -> hydrogen <input.hy>");
