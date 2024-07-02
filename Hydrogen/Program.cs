@@ -92,6 +92,13 @@ internal class Program
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine($"Program exited with exit code {exitCode}.");
 
+        if (exitCode == 139) // Segmentation fault
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Program failed with segmentation fault.\nThis is usually a fault of the program, not a user error.\nFor more info, check out https://en.wikipedia.org/wiki/Segfault.");
+            return 1;
+        }
+
         return 0;
     }
 

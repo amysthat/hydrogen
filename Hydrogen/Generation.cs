@@ -209,9 +209,6 @@ public class Generator
 
                 ulong relativePosition = workingScope.DefineVariable(identifier, variableType);
 
-                if (variableARegister[0] == 'e') // I hate assembly
-                    variableARegister = "r" + variableARegister[1..];
-
                 Pop(variableARegister);
                 output += $"    mov [rbp - {relativePosition}], {variableARegister}\n";
                 break;
@@ -227,7 +224,7 @@ public class Generator
                     Environment.Exit(1);
                 }
 
-                output += $"    ; Assign {assignIdentifier}";
+                output += $"    ; Assign {assignIdentifier}\n";
                 var assignExprType = GenerateExpression(statement.Assign.ValueExpression, variable!.Value.Type);
 
                 if (variable!.Value.Type != assignExprType)
@@ -236,10 +233,12 @@ public class Generator
                     Environment.Exit(1);
                 }
 
+                var assignARegister = Variables.GetARegisterForIntegerType(assignExprType);
                 long variablePosition = GetVariablePositionOnStackRelativeToWorkingScope(assignIdentifier);
                 var assemblyAssignString = CastVariablePositionRelativeToWorkingSpaceToAssemblyString(variablePosition);
 
-                Pop($"{assemblyAssignString}");
+                Pop($"{assignARegister}");
+                output += $"    mov [{assemblyAssignString}], {assignARegister}\n";
                 break;
 
             case NodeStatementType.Scope:
@@ -314,7 +313,7 @@ public class Generator
         output += "    xor rdi, rdi\n";
         output += "    syscall\n";
 
-        return output;
+        return OptimizeHorribly(output);
     }
 
     private void BeginNewWorkingScope()
@@ -340,6 +339,7 @@ public class Generator
         workingScope = workingScope.Parent;
     }
 
+    #region Variable Positioning
     private string CastVariablePositionRelativeToWorkingSpaceToAssemblyString(long position)
     {
         if (position < 0)
@@ -364,7 +364,8 @@ public class Generator
                 return stackDifference;
             }
 
-            stackDifference -= (long)currentScope.CurrentStackSize;
+            stackDifference -= 8; // rbp is pushed
+            stackDifference -= 128; // hydrogen currently allocated 128 bytes for all scopes
             currentScope = currentScope.Parent;
         }
 
@@ -404,6 +405,7 @@ public class Generator
 
         return false;
     }
+    #endregion
 
     public void Push(string register)
     {
@@ -415,7 +417,8 @@ public class Generator
         output += $"    pop {Force64BitRegister(register)}\n";
     }
 
-    private string Force64BitRegister(string register) // I hate assembly with a passion
+    #region I hate assembly with a passion
+    private string Force64BitRegister(string register)
     {
         if (!register.Contains(' '))
             return Force64BitRegisterLone(register);
@@ -431,8 +434,11 @@ public class Generator
         return workingRegister + register[firstHalfIndex..];
     }
 
-    private string Force64BitRegisterLone(string register) // I hate assembly with a passion
+    private string Force64BitRegisterLone(string register)
     {
+        if (register == "rsp" || register == "rbp")
+            return register;
+
         if (register.Contains('a'))
             register = "rax";
         else if (register.Contains('b'))
@@ -440,4 +446,7 @@ public class Generator
 
         return register;
     }
+    #endregion
+
+    private string OptimizeHorribly(string output) => output.Replace("    push rax\n    pop rax\n", ""); // lol
 }
