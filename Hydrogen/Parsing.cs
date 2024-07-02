@@ -596,7 +596,7 @@ public class Parser
 
         if (token == null)
         {
-            Console.Error.WriteLine("Parse Error: Unknown error on the end of the file.");
+            Console.Error.WriteLine("Parse Error: Unknown error at the end of the file.");
             Environment.Exit(1);
         }
 

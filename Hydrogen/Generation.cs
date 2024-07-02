@@ -286,9 +286,25 @@ public class Generator
         }
     }
 
+    private ulong GetStatementSize(NodeStatement nodeStatement)
+    {
+        if (nodeStatement.Type == NodeStatementType.Variable)
+        {
+            return Variables.GetSize(nodeStatement.Variable.Type);
+        }
+
+        return 0;
+    }
+
     private void GenerateScope(NodeScope scope)
     {
-        BeginNewWorkingScope();
+        ulong scopeSize = 0;
+        foreach (var statement in scope.Statements)
+        {
+            scopeSize += GetStatementSize(statement);
+        }
+
+        BeginNewWorkingScope(scopeSize);
         foreach (var statement in scope.Statements)
         {
             GenerateStatement(statement);
@@ -300,7 +316,13 @@ public class Generator
     {
         output = "section .text\n    global _start\n\n_start:\n";
 
-        BeginNewWorkingScope();
+        ulong scopeSize = 0;
+        foreach (var statement in program.Statements)
+        {
+            scopeSize += GetStatementSize(statement);
+        }
+
+        BeginNewWorkingScope(scopeSize);
 
         foreach (var statement in program.Statements)
         {
@@ -316,12 +338,12 @@ public class Generator
         return OptimizeHorribly(output);
     }
 
-    private void BeginNewWorkingScope()
+    private void BeginNewWorkingScope(ulong scopeSize)
     {
         output += "    ; Begin new scope\n";
         output += "    push rbp ; Previous base stack pointer\n";
         output += "    mov rbp, rsp\n";
-        output += "    sub rsp, 128 ; Allocate 128 bytes for scope\n";
+        output += $"    sub rsp, {scopeSize} ; Allocate {scopeSize} bytes for scope\n";
 
         var scope = new Scope
         {
@@ -365,7 +387,7 @@ public class Generator
             }
 
             stackDifference -= 8; // rbp is pushed
-            stackDifference -= 128; // hydrogen currently allocated 128 bytes for all scopes
+            stackDifference -= (long)currentScope.CurrentStackSize; // hydrogen currently allocated 128 bytes for all scopes
             currentScope = currentScope.Parent;
         }
 
