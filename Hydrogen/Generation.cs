@@ -51,79 +51,74 @@ public class Generator
 
     private VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
     {
-        switch (term.Type)
+        if (term is NodeTermInteger termInteger)
         {
-            case NodeTermType.Integer:
-                var integerType = Variables.IsInteger(suggestionType) ? suggestionType : VariableType.SignedInteger64;
+            var integerType = Variables.IsInteger(suggestionType) ? suggestionType : VariableType.SignedInteger64;
 
-                if (!Variables.IsSignedInteger(integerType) && term.Integer.Int_Lit.Value!.StartsWith('-'))
-                {
-                    Console.Error.WriteLine("Negative value given for unsigned integer.");
-                    Environment.Exit(1);
-                }
+            if (!Variables.IsSignedInteger(integerType) && termInteger.Int_Lit.Value!.StartsWith('-'))
+            {
+                Console.Error.WriteLine("Negative value given for unsigned integer.");
+                Environment.Exit(1);
+            }
 
-                Push(Variables.MoveIntegerToRegister(this, term.Integer, integerType));
-                return integerType;
-
-            case NodeTermType.Identifier:
-                string identifier = term.Identifier.Identifier.Value!;
-
-                var variable = GetVariable(identifier);
-
-                if (!variable.HasValue)
-                {
-                    Console.Error.WriteLine($"Variable '{identifier}' has not been declared.");
-                    Environment.Exit(1);
-                }
-
-                var variablePosition = GetVariablePositionOnStackRelativeToWorkingScope(identifier);
-                var assemblyString = CastVariablePositionRelativeToWorkingSpaceToAssemblyString(variablePosition);
-
-                var aRegister = Variables.GetARegisterForIntegerType(variable!.Value.Type);
-                var asmPointerSize = Variables.GetAsmPointerSizeForIntegerType(variable!.Value.Type);
-
-                output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type} {identifier} variable\n";
-                Push("rax");
-
-                return variable!.Value.Type;
-
-            case NodeTermType.Parenthesis:
-                return GenerateExpression(term.Parenthesis.Expression, suggestionType);
-
-            default:
-                throw new InvalidProgramException("Reached unreachable state on GenerateTerm().");
+            Push(Variables.MoveIntegerToRegister(this, termInteger, integerType));
+            return integerType;
         }
+
+        if (term is NodeTermIdentifier termIdentifier)
+        {
+            string identifier = termIdentifier.Identifier.Value!;
+
+            var variable = GetVariable(identifier);
+
+            if (!variable.HasValue)
+            {
+                Console.Error.WriteLine($"Variable '{identifier}' has not been declared.");
+                Environment.Exit(1);
+            }
+
+            var variablePosition = GetRelativeVariablePosition(identifier);
+            var assemblyString = CastRelativeVariablePositionToAssembly(variablePosition);
+
+            var aRegister = Variables.GetARegisterForIntegerType(variable!.Value.Type);
+            var asmPointerSize = Variables.GetAsmPointerSizeForIntegerType(variable!.Value.Type);
+
+            output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type} {identifier} variable\n";
+            Push("rax");
+
+            return variable!.Value.Type;
+        }
+
+        if (term is NodeTermParen termParenthesis)
+            return GenerateExpression(termParenthesis.Expression, suggestionType);
+
+        throw new InvalidProgramException("Reached unreachable state on GenerateTerm().");
     }
 
     private VariableType GenerateExpression(NodeExpression expression, VariableType suggestionType)
     {
-        switch (expression.Type)
+        if (expression is NodeTerm term)
+            return GenerateTerm(term!, suggestionType);
+
+        if (expression is NodeBinaryExpression binaryExpression)
+            return GenerateBinaryExpression(binaryExpression, suggestionType);
+
+        if (expression is NodeExprCast castExpression)
         {
-            case NodeExpressionType.Term:
-                var term = expression.Term;
+            var targetType = castExpression.CastType;
 
-                return GenerateTerm(term, suggestionType);
+            var expressionType = GenerateExpression(castExpression, targetType);
 
-            case NodeExpressionType.BinaryExpression:
-                return GenerateBinaryExpression(expression.BinaryExpression, suggestionType);
+            if (targetType == expressionType)
+            {
+                Console.WriteLine($"Warning: Redundant cast of {targetType}.");
+            }
 
-            case NodeExpressionType.Cast:
-                var castExpression = expression.Cast.Expression;
-                var targetType = expression.Cast.CastType;
-
-                var expressionType = GenerateExpression(castExpression, targetType);
-
-                if (targetType == expressionType)
-                {
-                    Console.WriteLine($"Warning: Redundant cast of {targetType}.");
-                }
-
-                Variables.Cast(this, expressionType, targetType);
-                return targetType;
-
-            default:
-                throw new InvalidProgramException("Reached unreachable state on GenerateExpression().");
+            Variables.Cast(this, expressionType, targetType);
+            return targetType;
         }
+
+        throw new InvalidProgramException("Reached unreachable state on GenerateExpression().");
     }
 
     private VariableType GenerateBinaryExpression(NodeBinaryExpression binaryExpression, VariableType suggestionType)
@@ -169,128 +164,131 @@ public class Generator
 
     private void GenerateStatement(NodeStatement statement)
     {
-        switch (statement.Type)
+        if (statement is NodeStmtExit exitStatement)
         {
-            case NodeStatementType.Exit:
-                var exitExprType = GenerateExpression(statement.Exit.ReturnCodeExpression, VariableType.Byte);
+            var exitExprType = GenerateExpression(exitStatement.ReturnCodeExpression, VariableType.Byte);
 
-                if (exitExprType != VariableType.Byte)
-                {
-                    Console.Error.WriteLine($"Invalid expression type on exit. Expected Byte and got {exitExprType}.");
-                    Environment.Exit(1);
-                }
+            if (exitExprType != VariableType.Byte)
+            {
+                Console.Error.WriteLine($"Invalid expression type on exit. Expected Byte and got {exitExprType}.");
+                Environment.Exit(1);
+            }
 
-                output += "    mov rax, 60 ; exit\n";
-                Pop("rdi"); // Retrieve literal from the top of the stack
-                output += "    syscall\n";
-                break;
+            output += "    mov rax, 60 ; exit\n";
+            Pop("rdi"); // Retrieve literal from the top of the stack
+            output += "    syscall\n";
+            return;
+        } 
 
-            case NodeStatementType.Variable:
-                string identifier = statement.Variable.Identifier.Value!;
+        if (statement is NodeStmtVar variableStatement)
+        {
+            string identifier = variableStatement.Identifier.Value!;
 
-                if (DoesVariableExist(identifier))
-                {
-                    Console.Error.WriteLine($"Variable '{identifier}' is already in use.");
-                    Environment.Exit(1);
-                }
+            if (DoesVariableExist(identifier))
+            {
+                Console.Error.WriteLine($"Variable '{identifier}' is already in use.");
+                Environment.Exit(1);
+            }
 
-                var variableType = statement.Variable.Type;
+            var variableType = variableStatement.Type;
 
-                output += $"    ; Define {identifier} variable of type {variableType}\n";
+            output += $"    ; Define {identifier} variable of type {variableType}\n";
 
-                var expressionType = GenerateExpression(statement.Variable.ValueExpression, variableType);
-                var variableARegister = Variables.GetARegisterForIntegerType(expressionType);
+            var expressionType = GenerateExpression(variableStatement.ValueExpression, variableType);
+            var variableARegister = Variables.GetARegisterForIntegerType(expressionType);
 
-                if (variableType != expressionType)
-                {
-                    Console.Error.WriteLine($"Type mismatch on variable statement. {variableType} != {expressionType}");
-                    Environment.Exit(1);
-                }
+            if (variableType != expressionType)
+            {
+                Console.Error.WriteLine($"Type mismatch on variable statement. {variableType} != {expressionType}");
+                Environment.Exit(1);
+            }
 
-                ulong relativePosition = workingScope.DefineVariable(identifier, variableType);
+            ulong relativePosition = workingScope.DefineVariable(identifier, variableType);
 
-                Pop(variableARegister);
-                output += $"    mov [rbp - {relativePosition}], {variableARegister}\n";
-                break;
+            Pop(variableARegister);
+            output += $"    mov [rbp - {relativePosition}], {variableARegister}\n";
+            return;
+        }
+        
+        if (statement is NodeStmtAssign assignStatement)
+        {
+            string assignIdentifier = assignStatement.Identifier.Value!;
 
-            case NodeStatementType.Assign:
-                string assignIdentifier = statement.Assign.Identifier.Value!;
+            var variable = GetVariable(assignIdentifier);
 
-                var variable = GetVariable(assignIdentifier);
+            if (!variable.HasValue)
+            {
+                Console.Error.WriteLine($"Variable '{assignIdentifier}' has not been declared yet.");
+                Environment.Exit(1);
+            }
 
-                if (!variable.HasValue)
-                {
-                    Console.Error.WriteLine($"Variable '{assignIdentifier}' has not been declared yet.");
-                    Environment.Exit(1);
-                }
+            output += $"    ; Assign {assignIdentifier}\n";
+            var assignExprType = GenerateExpression(assignStatement.ValueExpression, variable!.Value.Type);
 
-                output += $"    ; Assign {assignIdentifier}\n";
-                var assignExprType = GenerateExpression(statement.Assign.ValueExpression, variable!.Value.Type);
+            if (variable!.Value.Type != assignExprType)
+            {
+                Console.Error.WriteLine($"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type}) != {assignExprType}");
+                Environment.Exit(1);
+            }
 
-                if (variable!.Value.Type != assignExprType)
-                {
-                    Console.Error.WriteLine($"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type}) != {assignExprType}");
-                    Environment.Exit(1);
-                }
+            var assignARegister = Variables.GetARegisterForIntegerType(assignExprType);
+            long variablePosition = GetRelativeVariablePosition(assignIdentifier);
+            var assemblyAssignString = CastRelativeVariablePositionToAssembly(variablePosition);
 
-                var assignARegister = Variables.GetARegisterForIntegerType(assignExprType);
-                long variablePosition = GetVariablePositionOnStackRelativeToWorkingScope(assignIdentifier);
-                var assemblyAssignString = CastVariablePositionRelativeToWorkingSpaceToAssemblyString(variablePosition);
+            Pop($"{assignARegister}");
+            output += $"    mov [{assemblyAssignString}], {assignARegister}\n";
+            return;
+        }
+        
+        if (statement is NodeScope statementScope)
+        {
+            GenerateScope(statementScope);
+            return;
+        }
 
-                Pop($"{assignARegister}");
-                output += $"    mov [{assemblyAssignString}], {assignARegister}\n";
-                break;
+        if (statement is NodeStmtIf ifStatement) // TODO: Fix register usage later
+        {
+            var finalLabelIndex = labelCount + ifStatement.Elifs.Count + (ifStatement.Else.HasValue ? 1 : 0);
 
-            case NodeStatementType.Scope:
-                GenerateScope(statement.Scope);
-                break;
+            GenerateExpression(ifStatement.This.Expression, VariableType.SignedInteger64);
+            output += "    xor rax, rax ; Clear out rax for if statement";
+            Pop("rax");
+            output += $"    cmp rax, 0\n";
+            output += $"    je label{labelCount}\n";
+            GenerateScope(ifStatement.This.Scope);
+            output += $"    jmp label{finalLabelIndex}\n";
 
-            case NodeStatementType.If: // TODO: Fix register usage later
-                var ifStatement = statement.If;
+            for (int i = 0; i < ifStatement.Elifs.Count; i++)
+            {
+                var elifStatement = ifStatement.Elifs[i];
 
-                var finalLabelIndex = labelCount + ifStatement.Elifs.Count + (ifStatement.Else.HasValue ? 1 : 0);
-
-                GenerateExpression(ifStatement.This.Expression, VariableType.SignedInteger64);
-                output += "    xor rax, rax ; Clear out rax for if statement";
+                output += $"label{labelCount}:\n"; labelCount++;
+                GenerateExpression(elifStatement.Expression, VariableType.SignedInteger64);
                 Pop("rax");
                 output += $"    cmp rax, 0\n";
                 output += $"    je label{labelCount}\n";
-                GenerateScope(ifStatement.This.Scope);
+                GenerateScope(elifStatement.Scope);
                 output += $"    jmp label{finalLabelIndex}\n";
+            }
 
-                for (int i = 0; i < ifStatement.Elifs.Count; i++)
-                {
-                    var elifStatement = ifStatement.Elifs[i];
+            if (ifStatement.Else.HasValue)
+            {
+                output += $"label{labelCount}:\n"; labelCount++;
+                GenerateScope(ifStatement.Else.Value);
+            }
 
-                    output += $"label{labelCount}:\n"; labelCount++;
-                    GenerateExpression(elifStatement.Expression, VariableType.SignedInteger64);
-                    Pop("rax");
-                    output += $"    cmp rax, 0\n";
-                    output += $"    je label{labelCount}\n";
-                    GenerateScope(elifStatement.Scope);
-                    output += $"    jmp label{finalLabelIndex}\n";
-                }
-
-                if (ifStatement.Else.HasValue)
-                {
-                    output += $"label{labelCount}:\n"; labelCount++;
-                    GenerateScope(ifStatement.Else.Value);
-                }
-
-                output += $"label{finalLabelIndex}:\n";
-
-                break;
-
-            default:
-                throw new InvalidProgramException("Reached unreachable state on GenerateStatement().");
+            output += $"label{finalLabelIndex}:\n";
+            return;
         }
+
+        throw new InvalidProgramException("Reached unreachable state on GenerateStatement().");
     }
 
-    private ulong GetStatementSize(NodeStatement nodeStatement)
+    private static ulong GetStatementSize(NodeStatement nodeStatement)
     {
-        if (nodeStatement.Type == NodeStatementType.Variable)
+        if (nodeStatement is NodeStmtVar variableStatement)
         {
-            return Variables.GetSize(nodeStatement.Variable.Type);
+            return Variables.GetSize(variableStatement.Type);
         }
 
         return 0;
@@ -362,7 +360,7 @@ public class Generator
     }
 
     #region Variable Positioning
-    private string CastVariablePositionRelativeToWorkingSpaceToAssemblyString(long position)
+    private static string CastRelativeVariablePositionToAssembly(long position)
     {
         if (position < 0)
             return $"rbp + {-position}";
@@ -372,7 +370,7 @@ public class Generator
             return "rbp";
     }
 
-    private long GetVariablePositionOnStackRelativeToWorkingScope(string variableName)
+    private long GetRelativeVariablePosition(string variableName) // TODO: Not working
     {
         long stackDifference = 0;
 
@@ -387,7 +385,7 @@ public class Generator
             }
 
             stackDifference -= 8; // rbp is pushed
-            stackDifference -= (long)currentScope.CurrentStackSize; // hydrogen currently allocated 128 bytes for all scopes
+            stackDifference -= (long)currentScope.CurrentStackSize;
             currentScope = currentScope.Parent;
         }
 

@@ -95,7 +95,7 @@ internal class Program
         if (exitCode == 139) // Segmentation fault
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"Program failed with segmentation fault.\nThis is usually a fault of the program, not a user error.\nFor more info, check out https://en.wikipedia.org/wiki/Segfault.");
+            Console.WriteLine($"Program failed with segmentation fault.\nThis is usually a fault of the compiler, not a user error.\nFor more info, check out https://en.wikipedia.org/wiki/Segfault.");
             return 1;
         }
 
@@ -107,7 +107,7 @@ internal class Program
         if (RunCommand("nasm -felf64 out.asm") != 0)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("NASM compilation failed. This is a fault of the program, not a user error.");
+            Console.WriteLine("NASM compilation failed. This is a fault of the compiler, not a user error.");
             Console.WriteLine("If you don't have \"nasm\" installed on your system, please install it.");
             Environment.Exit(1);
         }
@@ -115,7 +115,7 @@ internal class Program
         if (RunCommand("ld -o out out.o") != 0)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("GNU linker failed. This is a fault of the program, not a user error.");
+            Console.WriteLine("GNU linker failed. This is a fault of the compiler, not a user error.");
             Console.WriteLine("If you don't have \"ld\" installed on your system, please install it.");
             Environment.Exit(1);
         }
