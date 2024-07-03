@@ -13,7 +13,7 @@ internal class Program
         {
 #if DEBUG
             args = ["user/test.hy"];
-            Directory.SetCurrentDirectory(Path.Combine(Directory.GetCurrentDirectory(), ".."));
+            Directory.SetCurrentDirectory(Path.Combine(Directory.GetCurrentDirectory(), "../../../.."));
 #elif RELEASE
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Incorrect usage. Correct usage:\n -> hydrogen <input.hy>");
@@ -57,7 +57,7 @@ internal class Program
         var parser = new Parser(tokens);
         var tree = parser.ParseProgram();
 
-        Console.WriteLine("Generating...");
+        Console.WriteLine("Compiling...");
         var generator = new Generator(tree!);
         string asm = generator.GenerateProgram();
 
@@ -76,7 +76,7 @@ internal class Program
             return 0;
         }
 
-        Console.WriteLine("Compiling...");
+        Console.WriteLine("Assembling...");
         Compile();
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
