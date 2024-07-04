@@ -21,7 +21,7 @@ public class Generator(NodeProgram program)
                 Environment.Exit(1);
             }
 
-            Push(_Variables.MoveIntegerToRegister(this, termInteger, integerType));
+            Push(Variable.MoveIntegerToRegister(this, termInteger, integerType));
             return integerType;
         }
 
