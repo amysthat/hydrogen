@@ -15,7 +15,7 @@ public class Scope
         {
             Type = type,
             BaseStackDifference = variablePosition,
-            Size = Variables.GetSize(type),
+            Size = _Variables.GetSize(type),
             Owner = this,
         };
 

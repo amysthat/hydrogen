@@ -8,4 +8,10 @@
     <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Using Include="Hydrogen.Generation.Variables.Integers.Byte">
+      <Alias>Byte</Alias>
+    </Using>
+  </ItemGroup>
+
 </Project>

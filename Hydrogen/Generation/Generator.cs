@@ -13,15 +13,15 @@ public class Generator(NodeProgram program)
     {
         if (term is NodeTermInteger termInteger)
         {
-            var integerType = Variables.IsInteger(suggestionType) ? suggestionType : VariableType.SignedInteger64;
+            IntegerType integerType = suggestionType is IntegerType _integerType ? _integerType : VariableTypes.SignedInteger64;
 
-            if (!Variables.IsSignedInteger(integerType) && termInteger.Int_Lit.Value!.StartsWith('-'))
+            if (Variable.IsUnsignedInteger(integerType) && termInteger.Int_Lit.Value!.StartsWith('-'))
             {
                 Console.Error.WriteLine("Negative value given for unsigned integer.");
                 Environment.Exit(1);
             }
 
-            Push(Variables.MoveIntegerToRegister(this, termInteger, integerType));
+            Push(_Variables.MoveIntegerToRegister(this, termInteger, integerType));
             return integerType;
         }
 
@@ -37,11 +37,16 @@ public class Generator(NodeProgram program)
                 Environment.Exit(1);
             }
 
+            if (variable.Value.Type is not IntegerType integerType)
+            {
+                throw new InvalidOperationException();
+            }
+
             var variablePosition = GetRelativeVariablePosition(identifier);
             var assemblyString = CastRelativeVariablePositionToAssembly(variablePosition);
 
-            var aRegister = Variables.GetARegisterForIntegerType(variable!.Value.Type);
-            var asmPointerSize = Variables.GetAsmPointerSizeForIntegerType(variable!.Value.Type);
+            var aRegister = integerType.AsmARegister;
+            var asmPointerSize = integerType.AsmPointerSize;
 
             output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type} {identifier} variable\n";
             Push("rax");
@@ -74,7 +79,7 @@ public class Generator(NodeProgram program)
                 Console.WriteLine($"Warning: Redundant cast of {targetType}.");
             }
 
-            Variables.Cast(this, expressionType, targetType);
+            _Variables.Cast(this, expressionType, targetType);
             return targetType;
         }
 
@@ -88,7 +93,7 @@ public class Generator(NodeProgram program)
         var leftExprType = GenerateExpression(binaryExpression.Left, suggestionType);
         var rightExprType = GenerateExpression(binaryExpression.Right, leftExprType);
 
-        if (!Variables.IsInteger(leftExprType) || !Variables.IsInteger(rightExprType))
+        if (leftExprType is not IntegerType || rightExprType is not IntegerType)
         {
             Console.Error.WriteLine("Expected integer types for binary expression.");
             Environment.Exit(1);
@@ -96,18 +101,18 @@ public class Generator(NodeProgram program)
 
         if (leftExprType != rightExprType)
         {
-            Console.Error.WriteLine("Expression type mismatch on binary expression.");
+            Console.Error.WriteLine($"Expression type mismatch on binary expression. {leftExprType} != {rightExprType}");
             Environment.Exit(1);
         }
 
-        var aRegister = Variables.GetARegisterForIntegerType(leftExprType);
-        var bRegister = Variables.GetBRegisterForIntegerType(leftExprType);
+        var aRegister = (leftExprType as IntegerType)!.AsmARegister;
+        var bRegister = (leftExprType as IntegerType)!.AsmBRegister;
 
         Pop($"{bRegister} ; Binary expression"); // Pop the second expression
         Pop(aRegister); // Pop the first expression
         if (type == NodeBinExprType.Add) output += $"    add {aRegister}, {bRegister}\n";
         if (type == NodeBinExprType.Subtract) output += $"    sub {aRegister}, {bRegister}\n";
-        if (Variables.IsSignedInteger(leftExprType))
+        if ((leftExprType as IntegerType)!.Signedness == IntegerSignedness.SignedInteger)
         {
             if (type == NodeBinExprType.Multiply) output += $"    imul {bRegister}\n";
             if (type == NodeBinExprType.Divide) output += $"    idiv {bRegister}\n";
@@ -126,9 +131,9 @@ public class Generator(NodeProgram program)
     {
         if (statement is NodeStmtExit exitStatement)
         {
-            var exitExprType = GenerateExpression(exitStatement.ReturnCodeExpression, VariableType.Byte);
+            var exitExprType = GenerateExpression(exitStatement.ReturnCodeExpression, VariableTypes.Byte);
 
-            if (exitExprType != VariableType.Byte)
+            if (exitExprType is not Byte)
             {
                 Console.Error.WriteLine($"Invalid expression type on exit. Expected Byte and got {exitExprType}.");
                 Environment.Exit(1);
@@ -155,7 +160,7 @@ public class Generator(NodeProgram program)
             output += $"    ; Define {identifier} variable of type {variableType}\n";
 
             var expressionType = GenerateExpression(variableStatement.ValueExpression, variableType);
-            var variableARegister = Variables.GetARegisterForIntegerType(expressionType);
+            var variableARegister = expressionType;
 
             if (variableType != expressionType)
             {
@@ -191,7 +196,7 @@ public class Generator(NodeProgram program)
                 Environment.Exit(1);
             }
 
-            var assignARegister = Variables.GetARegisterForIntegerType(assignExprType);
+            var assignARegister = _Variables.GetARegisterForIntegerType(assignExprType);
             long variablePosition = GetRelativeVariablePosition(assignIdentifier);
             var assemblyAssignString = CastRelativeVariablePositionToAssembly(variablePosition);
 
@@ -248,7 +253,7 @@ public class Generator(NodeProgram program)
     {
         if (nodeStatement is NodeStmtVariable variableStatement)
         {
-            return Variables.GetSize(variableStatement.Type);
+            return _Variables.GetSize(variableStatement.Type);
         }
 
         return 0;

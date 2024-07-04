@@ -4,8 +4,9 @@ namespace Hydrogen.Generation;
 
 public class VariableNotFoundException(string variable) : Exception(variable + " was not found");
 
-public static class Variables
+public static class _Variables
 {
+    [Obsolete]
     public static void Cast(Generator generator, VariableType castType, VariableType targetType)
     {
         if (castType == targetType)
@@ -96,44 +97,11 @@ public static class Variables
         throw new NotImplementedException($"Casting {castType} to {targetType} is not supported yet.");
     }
 
-    public static bool IsInteger(VariableType type)
-    {
-        switch (type)
-        {
-            case VariableType.SignedInteger64:
-            case VariableType.UnsignedInteger64:
-            case VariableType.SignedInteger16:
-            case VariableType.UnsignedInteger16:
-            case VariableType.SignedInteger32:
-            case VariableType.UnsignedInteger32:
-            case VariableType.Byte:
-                return true;
-
-            default:
-                return false;
-        }
-    }
-
-    public static bool IsSignedInteger(VariableType type)
-    {
-        switch (type)
-        {
-            case VariableType.SignedInteger64:
-                return true;
-            case VariableType.SignedInteger16:
-                return true;
-            case VariableType.SignedInteger32:
-                return true;
-
-            default:
-                return false;
-        }
-    }
-
     /// <summary>
     /// Moves an Integer to the appropriate register.
     /// </summary>
     /// <returns>Used register</returns>
+    [Obsolete]
     public static string MoveIntegerToRegister(Generator generator, NodeTermInteger integer, VariableType type)
     {
         if (!IsInteger(type))
@@ -157,52 +125,4 @@ public static class Variables
 
         return register;
     }
-
-    public static ulong GetSize(VariableType type) => type switch
-    {
-        VariableType.UnsignedInteger64 => 8,
-        VariableType.SignedInteger64 => 8,
-        VariableType.UnsignedInteger32 => 4,
-        VariableType.SignedInteger32 => 4,
-        VariableType.UnsignedInteger16 => 2,
-        VariableType.SignedInteger16 => 2,
-        VariableType.Byte => 1,
-        _ => throw new Exception($"Unknown variable type size: {type}"),
-    };
-
-    public static string GetARegisterForIntegerType(VariableType type) => type switch
-    {
-        VariableType.UnsignedInteger64 => "rax",
-        VariableType.SignedInteger64 => "rax",
-        VariableType.UnsignedInteger32 => "eax",
-        VariableType.SignedInteger32 => "eax",
-        VariableType.UnsignedInteger16 => "ax",
-        VariableType.SignedInteger16 => "ax",
-        VariableType.Byte => "al",
-        _ => throw new Exception($"Unknown integer variable type: {type}"),
-    };
-
-    public static string GetBRegisterForIntegerType(VariableType type) => type switch
-    {
-        VariableType.UnsignedInteger64 => "rbx",
-        VariableType.SignedInteger64 => "rbx",
-        VariableType.UnsignedInteger32 => "ebx",
-        VariableType.SignedInteger32 => "ebx",
-        VariableType.UnsignedInteger16 => "bx",
-        VariableType.SignedInteger16 => "bx",
-        VariableType.Byte => "bl",
-        _ => throw new Exception($"Unknown integer variable type: {type}"),
-    };
-
-    public static string GetAsmPointerSizeForIntegerType(VariableType type) => type switch
-    {
-        VariableType.UnsignedInteger64 => "qword",
-        VariableType.SignedInteger64 => "qword",
-        VariableType.UnsignedInteger32 => "dword",
-        VariableType.SignedInteger32 => "dword",
-        VariableType.UnsignedInteger16 => "word",
-        VariableType.SignedInteger16 => "word",
-        VariableType.Byte => "byte",
-        _ => throw new Exception($"Unknown integer variable type: {type}"),
-    };
 }
