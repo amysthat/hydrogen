@@ -10,8 +10,5 @@ public class Byte : IntegerType
     public override string AsmBRegister => "bl";
     public override string AsmPointerSize => "byte";
 
-    public override void IntegerCast(IntegerType integerType)
-    {
-        // TODO: Implement
-    }
+    public override void IntegerCast(Generator generator, IntegerType integerType) { } // Nothing
 }

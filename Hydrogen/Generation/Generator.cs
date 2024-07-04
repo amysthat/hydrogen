@@ -79,7 +79,7 @@ public class Generator(NodeProgram program)
                 Console.WriteLine($"Warning: Redundant cast of {targetType}.");
             }
 
-            _Variables.Cast(this, expressionType, targetType);
+            Variable.Cast(this, expressionType, targetType);
             return targetType;
         }
 
@@ -160,7 +160,6 @@ public class Generator(NodeProgram program)
             output += $"    ; Define {identifier} variable of type {variableType}\n";
 
             var expressionType = GenerateExpression(variableStatement.ValueExpression, variableType);
-            var variableARegister = expressionType;
 
             if (variableType != expressionType)
             {
@@ -168,10 +167,12 @@ public class Generator(NodeProgram program)
                 Environment.Exit(1);
             }
 
-            ulong relativePosition = workingScope.DefineVariable(identifier, variableType);
+            string variableARegister = (expressionType as IntegerType)!.AsmARegister;
+            long relativePosition = workingScope.DefineVariable(identifier, variableType);
+            string relativePositionAsm = CastRelativeVariablePositionToAssembly(relativePosition);
 
             Pop(variableARegister);
-            output += $"    mov [rbp - {relativePosition}], {variableARegister}\n";
+            output += $"    mov [{relativePositionAsm}], {variableARegister}\n";
             return;
         }
 
@@ -196,7 +197,14 @@ public class Generator(NodeProgram program)
                 Environment.Exit(1);
             }
 
-            var assignARegister = _Variables.GetARegisterForIntegerType(assignExprType);
+            if (assignExprType is not IntegerType assignIntegerType)
+            {
+                Console.Error.WriteLine($"Expected integer for variable assignment. {assignIdentifier} {assignExprType}");
+                Environment.Exit(1);
+                throw new Exception(); // To make C# be compliant on the use of assignIntegerType
+            }
+
+            string assignARegister = assignIntegerType.AsmARegister;
             long variablePosition = GetRelativeVariablePosition(assignIdentifier);
             var assemblyAssignString = CastRelativeVariablePositionToAssembly(variablePosition);
 
@@ -215,7 +223,7 @@ public class Generator(NodeProgram program)
         {
             var finalLabelIndex = labelCount + ifStatement.Elifs.Count + (ifStatement.Else.HasValue ? 1 : 0);
 
-            GenerateExpression(ifStatement.This.Expression, VariableType.SignedInteger64);
+            GenerateExpression(ifStatement.This.Expression, VariableTypes.SignedInteger64);
             output += "    xor rax, rax ; Clear out rax for if statement";
             Pop("rax");
             output += $"    cmp rax, 0\n";
@@ -228,7 +236,7 @@ public class Generator(NodeProgram program)
                 var elifStatement = ifStatement.Elifs[i];
 
                 output += $"label{labelCount}:\n"; labelCount++;
-                GenerateExpression(elifStatement.Expression, VariableType.SignedInteger64);
+                GenerateExpression(elifStatement.Expression, VariableTypes.SignedInteger64);
                 Pop("rax");
                 output += $"    cmp rax, 0\n";
                 output += $"    je label{labelCount}\n";
@@ -249,11 +257,11 @@ public class Generator(NodeProgram program)
         throw new InvalidProgramException("Reached unreachable state on GenerateStatement().");
     }
 
-    private static ulong GetStatementSize(NodeStatement nodeStatement)
+    private static long GetStatementSize(NodeStatement nodeStatement)
     {
         if (nodeStatement is NodeStmtVariable variableStatement)
         {
-            return _Variables.GetSize(variableStatement.Type);
+            return Variable.GetSize(variableStatement.Type);
         }
 
         return 0;
@@ -263,7 +271,7 @@ public class Generator(NodeProgram program)
     {
         output = "section .text\n    global _start\n\n_start:\n";
 
-        ulong scopeSize = 0;
+        long scopeSize = 0;
         foreach (var statement in program.Statements)
         {
             scopeSize += GetStatementSize(statement);
@@ -288,7 +296,7 @@ public class Generator(NodeProgram program)
     #region Scopes
     private void GenerateScope(NodeScope scope)
     {
-        ulong scopeSize = 0;
+        long scopeSize = 0;
         foreach (var statement in scope.Statements)
         {
             scopeSize += GetStatementSize(statement);
@@ -302,7 +310,7 @@ public class Generator(NodeProgram program)
         EndWorkingScope();
     }
 
-    private void BeginNewWorkingScope(ulong scopeSize)
+    private void BeginNewWorkingScope(long scopeSize)
     {
         output += "    ; Begin new scope\n";
         output += "    push rbp ; Previous base stack pointer\n";
@@ -347,12 +355,12 @@ public class Generator(NodeProgram program)
         {
             if (currentScope.variables.ContainsKey(variableName))
             {
-                stackDifference += (long)currentScope.variables.GetValueByKey(variableName).BaseStackDifference;
+                stackDifference += currentScope.variables.GetValueByKey(variableName).BaseStackDifference;
                 return stackDifference;
             }
 
             stackDifference -= 8; // rbp is pushed
-            stackDifference -= (long)currentScope.CurrentStackSize;
+            stackDifference -= currentScope.CurrentStackSize;
             currentScope = currentScope.Parent;
         }
 
@@ -405,7 +413,7 @@ public class Generator(NodeProgram program)
     }
 
     #region I hate assembly with a passion
-    private string Force64BitRegister(string register)
+    private static string Force64BitRegister(string register)
     {
         if (!register.Contains(' '))
             return Force64BitRegisterLone(register);
@@ -421,7 +429,7 @@ public class Generator(NodeProgram program)
         return workingRegister + register[firstHalfIndex..];
     }
 
-    private string Force64BitRegisterLone(string register)
+    private static string Force64BitRegisterLone(string register)
     {
         if (register == "rsp" || register == "rbp")
             return register;
@@ -435,5 +443,5 @@ public class Generator(NodeProgram program)
     }
     #endregion
 
-    private string OptimizeHorribly(string output) => output.Replace("    push rax\n    pop rax\n", ""); // lol
+    private static string OptimizeHorribly(string output) => output.Replace("    push rax\n    pop rax\n", ""); // lol
 }

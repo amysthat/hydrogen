@@ -10,9 +10,14 @@ public class SignedInteger16 : IntegerType
     public override string AsmBRegister => "bx";
     public override string AsmPointerSize => "word";
 
-    public override void IntegerCast(IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType)
     {
-        // TODO: Implement
+        if (integerType is Byte)
+        {
+            generator.Pop("rax ; Cast 16 bits to byte");
+            generator.output += $"    movzx rax, al\n";
+            generator.Push("rax");
+        }
     }
 }
 
@@ -26,8 +31,13 @@ public class UnsignedInteger16 : IntegerType
     public override string AsmBRegister => "bx";
     public override string AsmPointerSize => "word";
 
-    public override void IntegerCast(IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType)
     {
-        // TODO: Implement
+        if (integerType is Byte)
+        {
+            generator.Pop("rax ; Cast 16 bits to byte");
+            generator.output += $"    movzx rax, al\n";
+            generator.Push("rax");
+        }
     }
 }

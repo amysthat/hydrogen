@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using Hydrogen.Generation;
 using Hydrogen.Tokenization;
 
@@ -68,7 +69,7 @@ public partial class Parser(List<Token> tokens)
             if (castToken.Type != TokenType.Cast)
                 throw new InvalidOperationException();
 
-            if (!varType.HasValue)
+            if (varType == null)
             {
                 ErrorInvalid("variable type before 'cast'", castToken.LineNumber);
             }
@@ -80,7 +81,7 @@ public partial class Parser(List<Token> tokens)
                 ErrorInvalid("expression after 'cast'", castToken.LineNumber);
             }
 
-            return new NodeExprCast { CastType = varType!.Value, Expression = expression! };
+            return new NodeExprCast { CastType = varType!, Expression = expression! };
         }
 
         if (ParseTerm() is not NodeExpression lhsExpr)
@@ -223,10 +224,16 @@ public partial class Parser(List<Token> tokens)
 
         var token = Consume()!.Value;
 
-        string tokenType = token.Type.ToString();
-        var variableType = Enum.Parse(typeof(VariableType), tokenType);
+        if (token.Type != TokenType.VariableType)
+        {
+            throw new Exception($"ParseVariableType() called for {token.Type}.");
+        }
 
-        return (VariableType?)variableType;
+        string variableTypeStr = token.Value!;
+
+        var variableType = (VariableType) Activator.CreateInstance(Assembly.GetExecutingAssembly().GetType(variableTypeStr)!)!;
+
+        return variableType;
     }
 
 #pragma warning disable CA1822 // Mark members as static

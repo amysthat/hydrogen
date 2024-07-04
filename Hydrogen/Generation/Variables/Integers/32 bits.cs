@@ -10,9 +10,20 @@ public class SignedInteger32 : IntegerType
     public override string AsmBRegister => "ebx";
     public override string AsmPointerSize => "dword";
 
-    public override void IntegerCast(IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType)
     {
-        // TODO: Implement
+        if (integerType.Size == 2)
+        {
+            generator.Pop("rax ; Cast 32 bits to 16 bits");
+            generator.output += $"    movzx rax, ax\n";
+            generator.Push("rax");
+        }
+        else if (integerType is Byte)
+        {
+            generator.Pop("rax ; Cast 32 bits to byte");
+            generator.output += $"    movzx rax, al\n";
+            generator.Push("rax");
+        }
     }
 }
 
@@ -26,8 +37,19 @@ public class UnsignedInteger32 : IntegerType
     public override string AsmBRegister => "ebx";
     public override string AsmPointerSize => "dword";
 
-    public override void IntegerCast(IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType)
     {
-        // TODO: Implement
+        if (integerType.Size == 2)
+        {
+            generator.Pop("rax ; Cast 32 bits to 16 bits");
+            generator.output += $"    movzx rax, ax\n";
+            generator.Push("rax");
+        }
+        else if (integerType is Byte)
+        {
+            generator.Pop("rax ; Cast 32 bits to byte");
+            generator.output += $"    movzx rax, al\n";
+            generator.Push("rax");
+        }
     }
 }

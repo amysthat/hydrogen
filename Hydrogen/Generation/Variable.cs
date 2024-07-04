@@ -19,7 +19,22 @@ public abstract class VariableType
     public abstract string Keyword { get; }
     public abstract long Size { get; }
 
-    public abstract bool Cast(VariableType targetType);
+    public abstract bool Cast(Generator generator, VariableType targetType);
+
+    public static bool operator ==(VariableType x, VariableType y) => x is not null && y is not null && x.Keyword == y.Keyword;
+    public static bool operator !=(VariableType x, VariableType y) => x is not null && y is not null && x.Keyword != y.Keyword;
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not VariableType variableType)
+        {
+            return false;
+        }
+
+        return variableType.Keyword == Keyword;
+    }
+
+    public override int GetHashCode() => Keyword.GetHashCode();
 }
 
 public abstract class IntegerType : VariableType
@@ -29,16 +44,16 @@ public abstract class IntegerType : VariableType
     public abstract string AsmBRegister { get; }
     public abstract string AsmPointerSize { get; }
 
-    public override bool Cast(VariableType targetType)
+    public override bool Cast(Generator generator, VariableType targetType)
     {
         if (targetType is not IntegerType integerType)
             return false;
 
-        IntegerCast(integerType);
+        IntegerCast(generator, integerType);
         return true;
     }
 
-    public abstract void IntegerCast(IntegerType integerType);
+    public abstract void IntegerCast(Generator generator, IntegerType integerType);
 }
 
 public enum IntegerSignedness
@@ -49,8 +64,8 @@ public enum IntegerSignedness
 
 public struct Variable
 {
-    public ulong BaseStackDifference;
-    public ulong Size;
+    public long BaseStackDifference;
+    public long Size;
 
     public VariableType Type;
 
@@ -60,4 +75,15 @@ public struct Variable
     public static bool IsUnsignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.UnsignedInteger;
     
     public static long GetSize(VariableType variableType) => variableType.Size;
+
+    public static void Cast(Generator generator, VariableType variableType, VariableType targetType)
+    {
+        bool castSuccessful = variableType.Cast(generator, targetType);
+
+        if (!castSuccessful)
+        {
+            Console.Error.WriteLine($"Can not cast {variableType} to {targetType}.");
+            Environment.Exit(1);
+        }
+    }
 }

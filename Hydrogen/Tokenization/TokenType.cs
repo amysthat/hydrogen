@@ -28,11 +28,5 @@ public enum TokenType
     Slash,
 
     Cast,
-    SignedInteger64,
-    UnsignedInteger64,
-    SignedInteger16,
-    UnsignedInteger16,
-    SignedInteger32,
-    UnsignedInteger32,
-    Byte,
+    VariableType,
 }

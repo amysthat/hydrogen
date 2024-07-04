@@ -2,12 +2,12 @@
 
 public class Scope
 {
-    public ulong CurrentStackSize;
+    public long CurrentStackSize;
     public readonly Map<string, Variable> variables = new();
 
     public required Scope Parent;
 
-    public ulong DefineVariable(string variableName, VariableType type)
+    public long DefineVariable(string variableName, VariableType type)
     {
         var variablePosition = CurrentStackSize;
 
@@ -15,7 +15,7 @@ public class Scope
         {
             Type = type,
             BaseStackDifference = variablePosition,
-            Size = _Variables.GetSize(type),
+            Size = Variable.GetSize(type),
             Owner = this,
         };
 

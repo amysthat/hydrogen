@@ -82,7 +82,7 @@ internal static class NodeStatements
 
         var variableType = parser.ParseVariableType();
 
-        if (!variableType.HasValue)
+        if (variableType == null)
         {
             parser.ErrorInvalid("variable type after variable hint", identifierToken.LineNumber);
         }
@@ -98,7 +98,7 @@ internal static class NodeStatements
             parser.ErrorExpected("expression after '=' of variable statement", identifierToken.LineNumber);
         }
 
-        var statement = new NodeStmtVariable { Identifier = identifierToken, Type = variableType!.Value, ValueExpression = expression! };
+        var statement = new NodeStmtVariable { Identifier = identifierToken, Type = variableType!, ValueExpression = expression! };
 
         if (parser.TryPeek(TokenType.Semicolon, _ => parser.ErrorExpected("';' after variable statement", identifierToken.LineNumber)))
         {
