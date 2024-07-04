@@ -1,4 +1,4 @@
-﻿using Hydrogen.Generation;
+﻿using Hydrogen.Generation.Variables;
 
 namespace Hydrogen.Tokenization;
 
@@ -6,8 +6,8 @@ internal static class Keywords
 {
     public static Token Handle(string keyword, int lineCount)
     {
-        if (keyword == "exit")      return Token(TokenType.Exit);
-        else if (keyword == "if")   return Token(TokenType.If);
+        if (keyword == "exit") return Token(TokenType.Exit);
+        else if (keyword == "if") return Token(TokenType.If);
         else if (keyword == "elif") return Token(TokenType.Elif);
         else if (keyword == "else") return Token(TokenType.Else);
         else if (keyword == "cast") return Token(TokenType.Cast);
@@ -15,7 +15,7 @@ internal static class Keywords
         {
             foreach (var property in typeof(VariableTypes).GetProperties())
             {
-                VariableType varType = (VariableType) property.GetValue(null)!;
+                VariableType varType = (VariableType)property.GetValue(null)!;
 
                 if (varType.Keyword == keyword)
                 {

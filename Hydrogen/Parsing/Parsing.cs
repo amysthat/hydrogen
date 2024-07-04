@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using Hydrogen.Generation;
+using Hydrogen.Generation.Variables;
 using Hydrogen.Tokenization;
 
 namespace Hydrogen.Parsing;
@@ -231,7 +232,7 @@ public partial class Parser(List<Token> tokens)
 
         string variableTypeStr = token.Value!;
 
-        var variableType = (VariableType) Activator.CreateInstance(Assembly.GetExecutingAssembly().GetType(variableTypeStr)!)!;
+        var variableType = (VariableType)Activator.CreateInstance(Assembly.GetExecutingAssembly().GetType(variableTypeStr)!)!;
 
         return variableType;
     }

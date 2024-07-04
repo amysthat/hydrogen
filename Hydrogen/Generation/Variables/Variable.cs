@@ -1,7 +1,7 @@
 ﻿using Hydrogen.Generation.Variables.Integers;
 using Hydrogen.Parsing;
 
-namespace Hydrogen.Generation;
+namespace Hydrogen.Generation.Variables;
 
 public static class VariableTypes
 {
@@ -74,7 +74,7 @@ public struct Variable
 
     public static bool IsSignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.SignedInteger;
     public static bool IsUnsignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.UnsignedInteger;
-    
+
     public static long GetSize(VariableType variableType) => variableType.Size;
 
     public static void Cast(Generator generator, VariableType variableType, VariableType targetType)
@@ -83,7 +83,7 @@ public struct Variable
 
         if (!castSuccessful)
         {
-            Console.Error.WriteLine($"Can not cast {variableType} to {targetType}.");
+            Console.Error.WriteLine($"Can not cast {variableType.Keyword} to {targetType.Keyword}.");
             Environment.Exit(1);
         }
     }
@@ -102,11 +102,11 @@ public struct Variable
         }
         else if (type is UnsignedInteger32 || type is SignedInteger32) // I hate you assembly
         {
-            generator.output += $"    mov {register}, {integer.Int_Lit.Value}\n";
+            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for 32 bits\n";
         }
         else
         {
-            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for {type}\n";
+            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for {type.Keyword}\n";
             generator.output += $"    movzx rax, {register}\n";
         }
 

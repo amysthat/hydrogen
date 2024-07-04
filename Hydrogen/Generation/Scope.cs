@@ -1,4 +1,6 @@
-﻿namespace Hydrogen.Generation;
+﻿using Hydrogen.Generation.Variables;
+
+namespace Hydrogen.Generation;
 
 public class Scope
 {

@@ -1,4 +1,4 @@
-﻿using Hydrogen.Generation;
+﻿using Hydrogen.Generation.Variables;
 
 namespace Hydrogen.Parsing;
 
