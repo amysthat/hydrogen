@@ -2,52 +2,12 @@
 
 namespace Hydrogen.Generation;
 
-public class Generator
+public class Generator(NodeProgram program)
 {
-    private NodeProgram program;
-    public string output;
+    private NodeProgram program = program;
+    public string output = string.Empty;
     private int labelCount;
-    private Scope workingScope;
-
-    public class Scope
-    {
-        public ulong CurrentStackSize;
-        public readonly Map<string, Variable> variables = new();
-
-        public required Scope Parent;
-
-        public ulong DefineVariable(string variableName, VariableType type)
-        {
-            var variablePosition = CurrentStackSize;
-
-            var variable = new Variable
-            {
-                Type = type,
-                BaseStackDifference = variablePosition,
-                Size = Variables.GetSize(type),
-                Owner = this,
-            };
-
-            variables.Add(variableName, variable);
-
-            CurrentStackSize += variable.Size;
-
-            if (CurrentStackSize > 128)
-            {
-                throw new OutOfMemoryException("Scope size reached more than 128.");
-            }
-
-            return variablePosition;
-        }
-    }
-
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-    public Generator(NodeProgram program)
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-    {
-        this.program = program;
-        output = string.Empty;
-    }
+    private Scope workingScope = null!;
 
     private VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
     {
@@ -100,7 +60,7 @@ public class Generator
         if (expression is NodeTerm term)
             return GenerateTerm(term!, suggestionType);
 
-        if (expression is NodeBinaryExpression binaryExpression)
+        if (expression is NodeBinExpr binaryExpression)
             return GenerateBinaryExpression(binaryExpression, suggestionType);
 
         if (expression is NodeExprCast castExpression)
@@ -121,7 +81,7 @@ public class Generator
         throw new InvalidProgramException("Reached unreachable state on GenerateExpression().");
     }
 
-    private VariableType GenerateBinaryExpression(NodeBinaryExpression binaryExpression, VariableType suggestionType)
+    private VariableType GenerateBinaryExpression(NodeBinExpr binaryExpression, VariableType suggestionType)
     {
         var type = binaryExpression.Type;
 
@@ -145,17 +105,17 @@ public class Generator
 
         Pop($"{bRegister} ; Binary expression"); // Pop the second expression
         Pop(aRegister); // Pop the first expression
-        if (type == NodeBinaryExpressionType.Add) output += $"    add {aRegister}, {bRegister}\n";
-        if (type == NodeBinaryExpressionType.Subtract) output += $"    sub {aRegister}, {bRegister}\n";
+        if (type == NodeBinExprType.Add) output += $"    add {aRegister}, {bRegister}\n";
+        if (type == NodeBinExprType.Subtract) output += $"    sub {aRegister}, {bRegister}\n";
         if (Variables.IsSignedInteger(leftExprType))
         {
-            if (type == NodeBinaryExpressionType.Multiply) output += $"    imul {bRegister}\n";
-            if (type == NodeBinaryExpressionType.Divide) output += $"    idiv {bRegister}\n";
+            if (type == NodeBinExprType.Multiply) output += $"    imul {bRegister}\n";
+            if (type == NodeBinExprType.Divide) output += $"    idiv {bRegister}\n";
         }
         else
         {
-            if (type == NodeBinaryExpressionType.Multiply) output += $"    mul {bRegister}\n";
-            if (type == NodeBinaryExpressionType.Divide) output += $"    div {bRegister}\n";
+            if (type == NodeBinExprType.Multiply) output += $"    mul {bRegister}\n";
+            if (type == NodeBinExprType.Divide) output += $"    div {bRegister}\n";
         }
         Push(aRegister);
 
@@ -175,12 +135,12 @@ public class Generator
             }
 
             output += "    mov rax, 60 ; exit\n";
-            Pop("rdi"); // Retrieve literal from the top of the stack
+            Pop("rdi");
             output += "    syscall\n";
             return;
-        } 
+        }
 
-        if (statement is NodeStmtVar variableStatement)
+        if (statement is NodeStmtVariable variableStatement)
         {
             string identifier = variableStatement.Identifier.Value!;
 
@@ -209,7 +169,7 @@ public class Generator
             output += $"    mov [rbp - {relativePosition}], {variableARegister}\n";
             return;
         }
-        
+
         if (statement is NodeStmtAssign assignStatement)
         {
             string assignIdentifier = assignStatement.Identifier.Value!;
@@ -239,7 +199,7 @@ public class Generator
             output += $"    mov [{assemblyAssignString}], {assignARegister}\n";
             return;
         }
-        
+
         if (statement is NodeScope statementScope)
         {
             GenerateScope(statementScope);
@@ -286,28 +246,12 @@ public class Generator
 
     private static ulong GetStatementSize(NodeStatement nodeStatement)
     {
-        if (nodeStatement is NodeStmtVar variableStatement)
+        if (nodeStatement is NodeStmtVariable variableStatement)
         {
             return Variables.GetSize(variableStatement.Type);
         }
 
         return 0;
-    }
-
-    private void GenerateScope(NodeScope scope)
-    {
-        ulong scopeSize = 0;
-        foreach (var statement in scope.Statements)
-        {
-            scopeSize += GetStatementSize(statement);
-        }
-
-        BeginNewWorkingScope(scopeSize);
-        foreach (var statement in scope.Statements)
-        {
-            GenerateStatement(statement);
-        }
-        EndWorkingScope();
     }
 
     public string GenerateProgram()
@@ -336,6 +280,23 @@ public class Generator
         return OptimizeHorribly(output);
     }
 
+    #region Scopes
+    private void GenerateScope(NodeScope scope)
+    {
+        ulong scopeSize = 0;
+        foreach (var statement in scope.Statements)
+        {
+            scopeSize += GetStatementSize(statement);
+        }
+
+        BeginNewWorkingScope(scopeSize);
+        foreach (var statement in scope.Statements)
+        {
+            GenerateStatement(statement);
+        }
+        EndWorkingScope();
+    }
+
     private void BeginNewWorkingScope(ulong scopeSize)
     {
         output += "    ; Begin new scope\n";
@@ -358,6 +319,7 @@ public class Generator
 
         workingScope = workingScope.Parent;
     }
+    #endregion
 
     #region Variable Positioning
     private static string CastRelativeVariablePositionToAssembly(long position)

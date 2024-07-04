@@ -1,4 +1,5 @@
-﻿using Hydrogen.Tokenization;
+﻿using Hydrogen.Generation;
+using Hydrogen.Tokenization;
 
 namespace Hydrogen.Parsing;
 
@@ -6,7 +7,7 @@ public struct NodeStmtExit : NodeStatement
 {
     public NodeExpression ReturnCodeExpression;
 }
-public struct NodeStmtVar : NodeStatement
+public struct NodeStmtVariable : NodeStatement
 {
     public Token Identifier;
     public VariableType Type;
@@ -74,7 +75,7 @@ internal static class NodeStatements
         return exitStatement;
     }
 
-    public static NodeStmtVar ParseVariableStatement(Parser parser)
+    public static NodeStmtVariable ParseVariableStatement(Parser parser)
     {
         var identifierToken = parser.Consume()!.Value;
         parser.Consume(); // ":"
@@ -97,7 +98,7 @@ internal static class NodeStatements
             parser.ErrorExpected("expression after '=' of variable statement", identifierToken.LineNumber);
         }
 
-        var statement = new NodeStmtVar { Identifier = identifierToken, Type = variableType!.Value, ValueExpression = expression! };
+        var statement = new NodeStmtVariable { Identifier = identifierToken, Type = variableType!.Value, ValueExpression = expression! };
 
         if (parser.TryPeek(TokenType.Semicolon, _ => parser.ErrorExpected("';' after variable statement", identifierToken.LineNumber)))
         {

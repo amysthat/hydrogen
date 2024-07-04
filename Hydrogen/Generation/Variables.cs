@@ -1,33 +1,8 @@
-using Hydrogen.Generation;
 using Hydrogen.Parsing;
 
-namespace Hydrogen;
+namespace Hydrogen.Generation;
 
-public enum VariableType
-{
-    UnsignedInteger64,
-    SignedInteger64,
-    SignedInteger16,
-    UnsignedInteger16,
-    SignedInteger32,
-    UnsignedInteger32,
-    Byte,
-}
-
-public struct Variable
-{
-    public ulong BaseStackDifference;
-    public ulong Size;
-
-    public VariableType Type;
-
-    public required Generator.Scope Owner;
-}
-
-public class VariableNotFoundException : Exception
-{
-    public VariableNotFoundException(string variable) : base(variable + " was not found") { }
-}
+public class VariableNotFoundException(string variable) : Exception(variable + " was not found");
 
 public static class Variables
 {

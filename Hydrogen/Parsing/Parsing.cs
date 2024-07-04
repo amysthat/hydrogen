@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Hydrogen.Generation;
 using Hydrogen.Tokenization;
 
 namespace Hydrogen.Parsing;
@@ -109,16 +110,16 @@ public partial class Parser(List<Token> tokens)
                 Environment.Exit(1);
             }
 
-            var binExpr = new NodeBinaryExpression
+            var binExpr = new NodeBinExpr
             {
                 Left = lhsExpr,
                 Right = rhsExpr,
                 Type = opr.Type switch
                 {
-                    TokenType.Plus => NodeBinaryExpressionType.Add,
-                    TokenType.Minus => NodeBinaryExpressionType.Subtract,
-                    TokenType.Star => NodeBinaryExpressionType.Multiply,
-                    TokenType.Slash => NodeBinaryExpressionType.Divide,
+                    TokenType.Plus => NodeBinExprType.Add,
+                    TokenType.Minus => NodeBinExprType.Subtract,
+                    TokenType.Star => NodeBinExprType.Multiply,
+                    TokenType.Slash => NodeBinExprType.Divide,
                     _ => throw new InvalidProgramException("Unreachable state reached in ParseExpression()."),
                 }
             };

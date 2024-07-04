@@ -1,4 +1,6 @@
-﻿namespace Hydrogen.Parsing;
+﻿using Hydrogen.Generation;
+
+namespace Hydrogen.Parsing;
 
 public struct NodeExprCast : NodeExpression
 {
@@ -9,16 +11,16 @@ public interface NodeExpression
 {
 }
 
-public enum NodeBinaryExpressionType
+public enum NodeBinExprType
 {
     Add,
     Subtract,
     Multiply,
     Divide,
 }
-public struct NodeBinaryExpression : NodeExpression
+public struct NodeBinExpr : NodeExpression
 {
-    public NodeBinaryExpressionType Type;
+    public NodeBinExprType Type;
 
     public NodeExpression Left;
     public NodeExpression Right;
