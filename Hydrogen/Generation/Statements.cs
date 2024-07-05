@@ -119,4 +119,12 @@ public static class Statements
 
         generator.output += $"label{finalLabelIndex}:\n";
     }
+
+    public static long GetSize(NodeStatement nodeStatement)
+    {
+        if (nodeStatement is NodeStmtVariable variableStatement)
+            return variableStatement.Type.Size;
+
+        return 0;
+    }
 }

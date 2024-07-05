@@ -22,8 +22,8 @@ public abstract class VariableType
 
     public abstract bool Cast(Generator generator, VariableType targetType);
 
-    public static bool operator ==(VariableType x, VariableType y) => x is not null && y is not null && x.Keyword == y.Keyword;
-    public static bool operator !=(VariableType x, VariableType y) => x is not null && y is not null && x.Keyword != y.Keyword;
+    public static bool operator ==(VariableType? x, VariableType? y) => x is not null && y is not null && x.Keyword == y.Keyword;
+    public static bool operator !=(VariableType? x, VariableType? y) => x is not null && y is not null && x.Keyword != y.Keyword;
 
     public override bool Equals(object? obj)
     {

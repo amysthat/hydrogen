@@ -13,47 +13,10 @@ public class Generator(NodeProgram program)
     public VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
     {
         if (term is NodeTermInteger termInteger)
-        {
-            IntegerType integerType = suggestionType is IntegerType _integerType ? _integerType : VariableTypes.SignedInteger64;
-
-            if (Variable.IsUnsignedInteger(integerType) && termInteger.Int_Lit.Value!.StartsWith('-'))
-            {
-                Console.Error.WriteLine("Negative value given for unsigned integer.");
-                Environment.Exit(1);
-            }
-
-            Push(Variable.MoveIntegerToRegister(this, termInteger, integerType));
-            return integerType;
-        }
+            return Terms.Integer(this, termInteger, suggestionType);
 
         if (term is NodeTermIdentifier termIdentifier)
-        {
-            string identifier = termIdentifier.Identifier.Value!;
-
-            var variable = GetVariable(identifier);
-
-            if (!variable.HasValue)
-            {
-                Console.Error.WriteLine($"Variable '{identifier}' has not been declared.");
-                Environment.Exit(1);
-            }
-
-            if (variable.Value.Type is not IntegerType integerType)
-            {
-                throw new InvalidOperationException();
-            }
-
-            var variablePosition = GetRelativeVariablePosition(identifier);
-            var assemblyString = CastRelativeVariablePositionToAssembly(variablePosition);
-
-            var aRegister = integerType.AsmARegister;
-            var asmPointerSize = integerType.AsmPointerSize;
-
-            output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type.Keyword} {identifier} variable\n";
-            Push("rax");
-
-            return variable!.Value.Type;
-        }
+            return Terms.Identifier(this, termIdentifier);
 
         if (term is NodeTermParen termParenthesis)
             return GenerateExpression(termParenthesis.Expression, suggestionType);
@@ -67,65 +30,12 @@ public class Generator(NodeProgram program)
             return GenerateTerm(term!, suggestionType);
 
         if (expression is NodeBinExpr binaryExpression)
-            return GenerateBinaryExpression(binaryExpression, suggestionType);
+            return Expressions.BinaryExpression(this, binaryExpression, suggestionType);
 
         if (expression is NodeExprCast castExpression)
-        {
-            var targetType = castExpression.CastType;
-
-            var expressionType = GenerateExpression(castExpression, targetType);
-
-            if (targetType == expressionType)
-            {
-                Console.WriteLine($"Warning: Redundant cast of {targetType.Keyword}.");
-            }
-
-            Variable.Cast(this, expressionType, targetType);
-            return targetType!;
-        }
+            return Expressions.Cast(this, castExpression);
 
         throw new InvalidProgramException("Reached unreachable state on GenerateExpression().");
-    }
-
-    public VariableType GenerateBinaryExpression(NodeBinExpr binaryExpression, VariableType suggestionType)
-    {
-        var type = binaryExpression.Type;
-
-        var leftExprType = GenerateExpression(binaryExpression.Left, suggestionType);
-        var rightExprType = GenerateExpression(binaryExpression.Right, leftExprType);
-
-        if (leftExprType is not IntegerType || rightExprType is not IntegerType)
-        {
-            Console.Error.WriteLine("Expected integer types for binary expression.");
-            Environment.Exit(1);
-        }
-
-        if (leftExprType != rightExprType)
-        {
-            Console.Error.WriteLine($"Expression type mismatch on binary expression. {leftExprType} != {rightExprType}");
-            Environment.Exit(1);
-        }
-
-        var aRegister = (leftExprType as IntegerType)!.AsmARegister;
-        var bRegister = (leftExprType as IntegerType)!.AsmBRegister;
-
-        Pop($"{bRegister} ; Binary expression"); // Pop the second expression
-        Pop(aRegister); // Pop the first expression
-        if (type == NodeBinExprType.Add) output += $"    add {aRegister}, {bRegister}\n";
-        if (type == NodeBinExprType.Subtract) output += $"    sub {aRegister}, {bRegister}\n";
-        if ((leftExprType as IntegerType)!.Signedness == IntegerSignedness.SignedInteger)
-        {
-            if (type == NodeBinExprType.Multiply) output += $"    imul {bRegister}\n";
-            if (type == NodeBinExprType.Divide) output += $"    idiv {bRegister}\n";
-        }
-        else
-        {
-            if (type == NodeBinExprType.Multiply) output += $"    mul {bRegister}\n";
-            if (type == NodeBinExprType.Divide) output += $"    div {bRegister}\n";
-        }
-        Push(aRegister);
-
-        return leftExprType;
     }
 
     private void GenerateStatement(NodeStatement statement)
@@ -163,16 +73,6 @@ public class Generator(NodeProgram program)
         throw new InvalidProgramException("Reached unreachable state on GenerateStatement().");
     }
 
-    private static long GetStatementSize(NodeStatement nodeStatement)
-    {
-        if (nodeStatement is NodeStmtVariable variableStatement)
-        {
-            return Variable.GetSize(variableStatement.Type);
-        }
-
-        return 0;
-    }
-
     public string GenerateProgram()
     {
         output = "section .text\n    global _start\n\n_start:\n";
@@ -180,7 +80,7 @@ public class Generator(NodeProgram program)
         long scopeSize = 0;
         foreach (var statement in program.Statements)
         {
-            scopeSize += GetStatementSize(statement);
+            scopeSize += Statements.GetSize(statement);
         }
 
         BeginNewWorkingScope(scopeSize);
@@ -205,7 +105,7 @@ public class Generator(NodeProgram program)
         long scopeSize = 0;
         foreach (var statement in scope.Statements)
         {
-            scopeSize += GetStatementSize(statement);
+            scopeSize += Statements.GetSize(statement);
         }
 
         BeginNewWorkingScope(scopeSize);
