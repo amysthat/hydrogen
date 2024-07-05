@@ -77,13 +77,7 @@ public class Generator(NodeProgram program)
     {
         output = "section .text\n    global _start\n\n_start:\n";
 
-        long scopeSize = 0;
-        foreach (var statement in program.Statements)
-        {
-            scopeSize += Statements.GetSize(statement);
-        }
-
-        BeginNewWorkingScope(scopeSize);
+        BeginNewWorkingScope();
 
         foreach (var statement in program.Statements)
         {
@@ -102,13 +96,7 @@ public class Generator(NodeProgram program)
     #region Scopes
     public void GenerateScope(NodeScope scope)
     {
-        long scopeSize = 0;
-        foreach (var statement in scope.Statements)
-        {
-            scopeSize += Statements.GetSize(statement);
-        }
-
-        BeginNewWorkingScope(scopeSize);
+        BeginNewWorkingScope();
         foreach (var statement in scope.Statements)
         {
             GenerateStatement(statement);
@@ -116,12 +104,12 @@ public class Generator(NodeProgram program)
         EndWorkingScope();
     }
 
-    private void BeginNewWorkingScope(long scopeSize)
+    private void BeginNewWorkingScope()
     {
         output += "    ; Begin new scope\n";
         output += "    push rbp ; Set up stack pointers\n";
         output += "    mov rbp, rsp\n";
-        output += $"    sub rsp, {scopeSize} ; Allocate {scopeSize} bytes for scope\n";
+        output += "    sub rsp, 128 ; Dedicate 128 bytes for this scope\n";
 
         var scope = new Scope
         {
@@ -133,8 +121,8 @@ public class Generator(NodeProgram program)
 
     private void EndWorkingScope()
     {
-        output += "    mov rsp, rbp ; Revert stack pointers\n";
-        output += "    pop rbp\n";
+        output += "    add rsp, 128 ; Revert the 128 byte dedication\n";
+        output += "    leave ; Revert stack pointers\n";
         output += "    ; End of scope\n";
 
         workingScope = workingScope.Parent;
@@ -162,12 +150,13 @@ public class Generator(NodeProgram program)
         {
             if (currentScope.variables.ContainsKey(variableName))
             {
+                stackDifference += 8; // Account for scopes's base stack register
                 stackDifference += currentScope.variables.GetValueByKey(variableName).BaseStackDifference;
                 return stackDifference;
             }
 
+            stackDifference -= 128; // Currently, a static 128 bytes is allocated for stack sizes
             stackDifference -= 8; // rbp is pushed
-            stackDifference -= currentScope.CurrentStackSize;
             currentScope = currentScope.Parent;
         }
 

@@ -4,6 +4,7 @@ namespace Hydrogen.Generation;
 
 public class Scope
 {
+    [Obsolete("Don't use this, use 128 bytes.")]
     public long CurrentStackSize;
     public readonly Map<string, Variable> variables = new();
 
@@ -25,6 +26,6 @@ public class Scope
 
         CurrentStackSize += variable.Size;
 
-        return variablePosition;
+        return variablePosition + 8;
     }
 }

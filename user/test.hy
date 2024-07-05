@@ -10,4 +10,4 @@ zvar : byte = 215;
     zvar = 152;
 }
 
-exit zvar - yvar;
+exit zvar - xvar;
