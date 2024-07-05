@@ -1,4 +1,5 @@
-﻿using Hydrogen.Generation.Variables;
+﻿#pragma warning disable CS0618 // Tür veya üye artık kullanılmıyor
+using Hydrogen.Generation.Variables;
 
 namespace Hydrogen.Generation;
 
@@ -29,3 +30,4 @@ public class Scope
         return variablePosition + 8;
     }
 }
+#pragma warning restore CS0618 // Tür veya üye artık kullanılmıyor
