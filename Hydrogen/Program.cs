@@ -107,7 +107,7 @@ internal class Program
         if (RunCommand("nasm -felf64 out.asm") != 0)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("NASM compilation failed. This is a fault of the compiler, not a user error.");
+            Console.WriteLine("Assembling failed. This is a fault of the compiler, not a user error.");
             Console.WriteLine("If you don't have \"nasm\" installed on your system, please install it.");
             Environment.Exit(1);
         }
@@ -115,7 +115,7 @@ internal class Program
         if (RunCommand("ld -o out out.o") != 0)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("GNU linker failed. This is a fault of the compiler, not a user error.");
+            Console.WriteLine("Linking failed. This is a fault of the compiler, not a user error.");
             Console.WriteLine("If you don't have \"ld\" installed on your system, please install it.");
             Environment.Exit(1);
         }

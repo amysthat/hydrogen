@@ -4,7 +4,7 @@ internal static class SingleCharTokenizer
 {
     public static Token Handle(char c, int lineCount)
     {
-        if (c == '=')      return Token(TokenType.Equals);
+        if (c == '=') return Token(TokenType.Equals);
         else if (c == ':') return Token(TokenType.VariableHint);
         else if (c == '(') return Token(TokenType.OpenParenthesis);
         else if (c == ')') return Token(TokenType.CloseParenthesis);
@@ -15,6 +15,7 @@ internal static class SingleCharTokenizer
         else if (c == '*') return Token(TokenType.Star);
         else if (c == '/') return Token(TokenType.Slash);
         else if (c == ';') return Token(TokenType.Semicolon);
+        else if (c == '&') return Token(TokenType.VarToPtr);
         else
         {
             Console.ForegroundColor = ConsoleColor.Red;

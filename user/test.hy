@@ -2,12 +2,8 @@ xvar : byte = 151;
 
 yvar : byte = xvar;
 
-zvar : byte = 215;
+zvar : byte = 152;
 
-{
-    asdf : i32 = -13543515;
+fvar : ptr = &yvar;
 
-    zvar = 152;
-}
-
-exit zvar - xvar;
+exit zvar - yvar;

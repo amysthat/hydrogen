@@ -35,8 +35,15 @@ public partial class Parser(List<Token> tokens)
                 Int_Lit = intLitToken!.Value,
             };
         }
-        else if (TryConsume(TokenType.Identifier, out var identToken)) // Variable type handled by generator
-            return new NodeTermIdentifier { Identifier = identToken!.Value };
+        else if (TryConsume(TokenType.Identifier, out var identToken))
+            return new NodeTermIdentifier { Identifier = identToken!.Value, VarToPtr = false };
+        else if (TryConsume(TokenType.VarToPtr, out _))
+        {
+            TryPeek(TokenType.Identifier, identToken => ErrorExpected("identifier after pointer", identToken.LineNumber));
+            identToken = Consume();
+
+            return new NodeTermIdentifier { Identifier = identToken!.Value, VarToPtr = true };
+        }
         else if (TryConsume(TokenType.OpenParenthesis, out _))
         {
             var expression = ParseExpression();

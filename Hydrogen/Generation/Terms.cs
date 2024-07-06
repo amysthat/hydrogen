@@ -40,11 +40,23 @@ public static class Terms
         var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
 
         var aRegister = integerType.AsmARegister;
-        var asmPointerSize = integerType.AsmPointerSize;
 
-        generator.output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type.Keyword} {identifier} variable\n";
-        generator.Push("rax");
+        generator.output += "    xor rax, rax\n";
+        if (!termIdentifier.VarToPtr)
+        {
+            var asmPointerSize = integerType.AsmPointerSize;
 
-        return variable!.Value.Type;
+            generator.output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type.Keyword} {identifier} variable\n";
+            generator.Push("rax");
+
+            return variable!.Value.Type;
+        }
+        else
+        {
+            generator.output += $"    lea rax, [{assemblyString}] ; &{variable!.Value.Type.Keyword} {identifier} variable\n";
+            generator.Push("rax");
+
+            return VariableTypes.Pointer;
+        }
     }
 }
