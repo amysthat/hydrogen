@@ -52,7 +52,7 @@ public static class Expressions
     {
         var targetType = castExpression.CastType;
 
-        var expressionType = generator.GenerateExpression(castExpression, targetType);
+        var expressionType = generator.GenerateExpression(castExpression.Expression, targetType);
 
         if (targetType == expressionType)
         {

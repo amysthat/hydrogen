@@ -67,12 +67,18 @@ public enum IntegerSignedness
 
 public struct Variable
 {
-    public long BaseStackDifference;
-    public long Size;
+    public required long BaseStackDifference;
+    public required long Size;
 
-    public VariableType Type;
+    public required string Name;
+    public required VariableType Type;
 
     public required Scope Owner;
+
+    /// <summary>
+    /// To be used with the `mov` instruction.
+    /// </summary>
+    public long GetBasePositionWithSize() => BaseStackDifference + Size - 1;
 
     public static bool IsSignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.SignedInteger;
     public static bool IsUnsignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.UnsignedInteger;

@@ -21,5 +21,6 @@ public class Pointer : IntegerType
 
         Console.ForegroundColor = ConsoleColor.Red;
         Console.Error.WriteLine("Can not cast pointer to anything other than u64.");
+        Environment.Exit(1);
     }
 }

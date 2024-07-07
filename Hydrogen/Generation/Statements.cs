@@ -5,7 +5,7 @@ namespace Hydrogen.Generation;
 
 public static class Statements
 {
-    public static void ExitStatement(Generator generator, NodeStmtExit exitStatement)
+    public static void Exit(Generator generator, NodeStmtExit exitStatement)
     {
         var exitExprType = generator.GenerateExpression(exitStatement.ReturnCodeExpression, VariableTypes.Byte);
 
@@ -42,15 +42,17 @@ public static class Statements
             Environment.Exit(1);
         }
 
-        string variableARegister = (expressionType as IntegerType)!.AsmARegister;
-        long relativePosition = generator.workingScope.DefineVariable(identifier, variableType);
+        generator.workingScope.DefineVariable(identifier, variableType);
+
+        string variableARegister = (variableType as IntegerType)!.AsmARegister;
+        long relativePosition = generator.GetRelativeVariablePosition(identifier) + variableType.Size - 1;
         string relativePositionAsm = Generator.CastRelativeVariablePositionToAssembly(relativePosition);
 
         generator.Pop(variableARegister);
         generator.output += $"    mov [{relativePositionAsm}], {variableARegister}\n";
     }
 
-    public static void VariableAssignmentStatement(Generator generator, NodeStmtAssign assignmentStatement)
+    public static void VariableAssignment(Generator generator, NodeStmtAssign assignmentStatement)
     {
         string assignIdentifier = assignmentStatement.Identifier.Value!;
 
@@ -86,7 +88,7 @@ public static class Statements
         generator.output += $"    mov [{assemblyAssignString}], {assignARegister}\n";
     }
 
-    public static void IfStatement(Generator generator, NodeStmtIf ifStatement) // TODO: Fix register usage later
+    public static void If(Generator generator, NodeStmtIf ifStatement) // TODO: Fix register usage later
     {
         var finalLabelIndex = generator.labelCount + ifStatement.Elifs.Count + (ifStatement.Else.HasValue ? 1 : 0);
 

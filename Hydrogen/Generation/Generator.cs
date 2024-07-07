@@ -42,31 +42,36 @@ public class Generator(NodeProgram program)
     {
         if (statement is NodeStmtExit exitStatement)
         {
-            Statements.ExitStatement(this, exitStatement);
+            Statements.Exit(this, exitStatement);
+            output += "\n";
             return;
         }
 
         if (statement is NodeStmtVariable variableStatement)
         {
             Statements.VariableStatement(this, variableStatement);
+            output += "\n";
             return;
         }
 
         if (statement is NodeStmtAssign assignStatement)
         {
-            Statements.VariableAssignmentStatement(this, assignStatement);
+            Statements.VariableAssignment(this, assignStatement);
+            output += "\n";
             return;
         }
 
         if (statement is NodeScope statementScope)
         {
             GenerateScope(statementScope);
+            output += "\n";
             return;
         }
 
         if (statement is NodeStmtIf ifStatement)
         {
-            Statements.IfStatement(this, ifStatement);
+            Statements.If(this, ifStatement);
+            output += "\n";
             return;
         }
 
@@ -110,6 +115,7 @@ public class Generator(NodeProgram program)
         output += "    push rbp ; Set up stack pointers\n";
         output += "    mov rbp, rsp\n";
         output += "    sub rsp, 128 ; Dedicate 128 bytes for this scope\n";
+        output += "\n";
 
         var scope = new Scope
         {
@@ -124,6 +130,7 @@ public class Generator(NodeProgram program)
         output += "    add rsp, 128 ; Revert the 128 byte dedication\n";
         output += "    leave ; Revert stack pointers\n";
         output += "    ; End of scope\n";
+        output += "\n";
 
         workingScope = workingScope.Parent;
     }
@@ -140,7 +147,7 @@ public class Generator(NodeProgram program)
             return "rbp";
     }
 
-    public long GetRelativeVariablePosition(string variableName) // TODO: Not working
+    public long GetRelativeVariablePosition(string variableName)
     {
         long stackDifference = 0;
 

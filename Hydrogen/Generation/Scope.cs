@@ -11,7 +11,7 @@ public class Scope
 
     public required Scope Parent;
 
-    public long DefineVariable(string variableName, VariableType type)
+    public Variable DefineVariable(string variableName, VariableType type)
     {
         var variablePosition = CurrentStackSize;
 
@@ -21,13 +21,14 @@ public class Scope
             BaseStackDifference = variablePosition,
             Size = Variable.GetSize(type),
             Owner = this,
+            Name = variableName,
         };
 
         variables.Add(variableName, variable);
 
         CurrentStackSize += variable.Size;
 
-        return variablePosition + 8;
+        return variable;
     }
 }
 #pragma warning restore CS0618 // Tür veya üye artık kullanılmıyor
