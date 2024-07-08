@@ -4,4 +4,4 @@ zvar : byte = xvar;
 
 fvar : byte* = &zvar;
 
-exit zvar;
+exit *fvar;

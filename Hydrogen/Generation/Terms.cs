@@ -36,7 +36,7 @@ public static class Terms
             throw new InvalidOperationException();
         }
 
-        var variablePosition = generator.GetRelativeVariablePosition(identifier);
+        var variablePosition = generator.GetRelativeVariablePosition(identifier) + variable.Value.Size - 1;
         var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
         var asmPointerSize = integerType.AsmPointerSize;
         var aRegister = integerType.AsmARegister;
@@ -48,7 +48,7 @@ public static class Terms
         return variable!.Value.Type;
     }
 
-    public static VariableType Pointer(Generator generator, NodeTermPointer termPointer)
+    public static VariableType PointerAddress(Generator generator, NodeTermPointerAddress termPointer)
     {
         string identifier = termPointer.Identifier.Identifier.Value!;
 
@@ -63,10 +63,49 @@ public static class Terms
         var variablePosition = generator.GetRelativeVariablePosition(identifier);
         var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
 
-        generator.output += "    xor rax, rax\n";
         generator.output += $"    lea rax, [{assemblyString}] ; &{variable!.Value.Type.Keyword} {identifier} variable\n";
         generator.Push("rax");
 
         return new Pointer { RepresentingType = variable!.Value.Type };
+    }
+
+    public static VariableType PointerValue(Generator generator, NodeTermPointerValue termValue)
+    {
+        string identifier = termValue.Identifier.Identifier.Value!;
+
+        var variable = generator.GetVariable(identifier);
+
+        if (!variable.HasValue)
+        {
+            Console.Error.WriteLine($"Variable '{identifier}' has not been declared.");
+            Environment.Exit(1);
+        }
+
+        if (variable.Value.Type is not Pointer)
+        {
+            Console.Error.WriteLine($"Variable '{identifier}' is not a pointer.");
+            Environment.Exit(1);
+        }
+
+        var pointerType = (variable.Value.Type as Pointer)!;
+
+        if (pointerType.RepresentingType is not IntegerType)
+        {
+            throw new InvalidOperationException();
+        }
+
+        var targetType = (pointerType.RepresentingType as IntegerType)!;
+
+        var variablePosition = generator.GetRelativeVariablePosition(identifier) + pointerType.Size - 1;
+        var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
+        var pointerSize = targetType.AsmPointerSize;
+
+        var aRegister = targetType.AsmARegister;
+
+        generator.output += $"    mov rbx, [{assemblyString}] ; {identifier} pointer\n";
+        generator.output += $"    mov {aRegister}, {pointerSize} [rbx] ; Pointer value\n";
+        generator.Push("rax");
+
+        return pointerType.RepresentingType;
     }
 }

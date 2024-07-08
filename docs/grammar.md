@@ -40,6 +40,7 @@ $$
                         \text{ident} \\
                         ([\text{expr}]) \\
                         [\text{pointer}] \\
+                        *[\text{pointer}] \\
                         \end{cases} \\
 
     [\text{integer}] &\to \begin{cases}

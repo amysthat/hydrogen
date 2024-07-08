@@ -43,7 +43,14 @@ public partial class Parser(List<Token> tokens)
             TryPeek(TokenType.Identifier, identToken => ErrorExpected("identifier after pointer", identToken.LineNumber));
             identToken = Consume();
 
-            return new NodeTermPointer { Identifier = new NodeTermIdentifier { Identifier = identToken!.Value } };
+            return new NodeTermPointerAddress { Identifier = new NodeTermIdentifier { Identifier = identToken!.Value } };
+        }
+        else if (TryPeek(TokenType.Star) && TryPeek(TokenType.Identifier, 1))
+        {
+            Consume(); // *
+            var identifier = Consume();
+
+            return new NodeTermPointerValue { Identifier = new NodeTermIdentifier { Identifier = identifier!.Value } };
         }
         else if (TryConsume(TokenType.OpenParenthesis, out _))
         {

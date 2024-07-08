@@ -75,6 +75,8 @@ public struct Variable
 
     public required Scope Owner;
 
+    public override string ToString() => Type.ToString() + " " + Name;
+
     public static bool IsSignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.SignedInteger;
     public static bool IsUnsignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.UnsignedInteger;
 

@@ -6,18 +6,27 @@ public struct NodeTermInteger : NodeTerm
 {
     public Token Int_Lit;
 }
+
 public struct NodeTermIdentifier : NodeTerm
 {
     public Token Identifier;
 }
-public struct NodeTermPointer : NodeTerm
+
+public struct NodeTermPointerAddress : NodeTerm
 {
     public NodeTermIdentifier Identifier;
 }
+
+public struct NodeTermPointerValue : NodeTerm
+{
+    public NodeTermIdentifier Identifier;
+}
+
 public struct NodeTermParen : NodeTerm
 {
     public NodeExpression Expression;
 }
+
 public interface NodeTerm : NodeExpression
 {
 }

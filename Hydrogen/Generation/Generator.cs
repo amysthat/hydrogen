@@ -18,8 +18,11 @@ public class Generator(NodeProgram program)
         if (term is NodeTermIdentifier termIdentifier)
             return Terms.Identifier(this, termIdentifier);
 
-        if (term is NodeTermPointer termPointer)
-            return Terms.Pointer(this, termPointer);
+        if (term is NodeTermPointerAddress termPointerAdress)
+            return Terms.PointerAddress(this, termPointerAdress);
+
+        if (term is NodeTermPointerValue termPointerValue)
+            return Terms.PointerValue(this, termPointerValue);
 
         if (term is NodeTermParen termParenthesis)
             return GenerateExpression(termParenthesis.Expression, suggestionType);
