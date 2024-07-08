@@ -54,7 +54,7 @@ public class Tokenizer(string source)
                 buf = string.Empty;
                 continue;
             }
-            
+
             if (HandleComments())
                 continue;
 
@@ -98,7 +98,7 @@ public class Tokenizer(string source)
             return true;
         }
 
-        return false; 
+        return false;
     }
 
     #region Consume & Peek

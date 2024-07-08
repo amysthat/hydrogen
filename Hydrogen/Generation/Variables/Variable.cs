@@ -13,8 +13,6 @@ public static class VariableTypes
     public static SignedInteger16 SignedInteger16 => new();
     public static UnsignedInteger16 UnsignedInteger16 => new();
     public static Byte Byte => new();
-
-    public static Pointer Pointer => new();
 }
 
 public abstract class VariableType
@@ -104,11 +102,15 @@ public struct Variable
     {
         var register = type.AsmARegister;
 
-        if (type is UnsignedInteger64 || type is SignedInteger64)
+        if (type is Pointer)
+        {
+            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for {type.Keyword}\n";
+        }
+        else if (type.Size == 8)
         {
             generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for 64 bits\n";
         }
-        else if (type is UnsignedInteger32 || type is SignedInteger32) // I hate you assembly
+        else if (type.Size == 4) // I hate you assembly
         {
             generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for 32 bits\n";
         }

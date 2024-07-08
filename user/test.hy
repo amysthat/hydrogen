@@ -1,7 +1,7 @@
 xvar : byte = 152;
 yvar : i64 = -1365153153151351;
-zvar : byte = 152;
+zvar : byte = xvar;
 
-fvar : ptr = &xvar;
+fvar : byte* = &zvar;
 
-exit xvar;
+exit zvar;

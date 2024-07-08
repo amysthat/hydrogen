@@ -8,8 +8,11 @@ public struct NodeTermInteger : NodeTerm
 }
 public struct NodeTermIdentifier : NodeTerm
 {
-    public bool VarToPtr;
     public Token Identifier;
+}
+public struct NodeTermPointer : NodeTerm
+{
+    public NodeTermIdentifier Identifier;
 }
 public struct NodeTermParen : NodeTerm
 {

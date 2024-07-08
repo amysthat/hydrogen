@@ -38,7 +38,8 @@ $$
     [\text{term}] &\to \begin{cases}
                         [\text{integer}] \\
                         \text{ident} \\
-                        ([\text{expr}])
+                        ([\text{expr}]) \\
+                        [\text{pointer}] \\
                         \end{cases} \\
 
     [\text{integer}] &\to \begin{cases}
@@ -53,7 +54,12 @@ $$
                         \text{i32} \\
                         \text{u32} \\
                         \text{byte} \\
+                        [\text{varType}]* \\
                         \end{cases} \\
+    
+    [\text{pointer}] &\to \begin{cases}
+                        \text{\&ident}
+                        \end{cases}
 
 \end{align}
 $$

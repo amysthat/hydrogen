@@ -38,25 +38,35 @@ public static class Terms
 
         var variablePosition = generator.GetRelativeVariablePosition(identifier);
         var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
-
+        var asmPointerSize = integerType.AsmPointerSize;
         var aRegister = integerType.AsmARegister;
 
         generator.output += "    xor rax, rax\n";
-        if (!termIdentifier.VarToPtr)
+        generator.output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type.Keyword} {identifier} variable\n";
+        generator.Push("rax");
+
+        return variable!.Value.Type;
+    }
+
+    public static VariableType Pointer(Generator generator, NodeTermPointer termPointer)
+    {
+        string identifier = termPointer.Identifier.Identifier.Value!;
+
+        var variable = generator.GetVariable(identifier);
+
+        if (!variable.HasValue)
         {
-            var asmPointerSize = integerType.AsmPointerSize;
-
-            generator.output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type.Keyword} {identifier} variable\n";
-            generator.Push("rax");
-
-            return variable!.Value.Type;
+            Console.Error.WriteLine($"Variable '{identifier}' has not been declared.");
+            Environment.Exit(1);
         }
-        else
-        {
-            generator.output += $"    lea rax, [{assemblyString}] ; &{variable!.Value.Type.Keyword} {identifier} variable\n";
-            generator.Push("rax");
 
-            return VariableTypes.Pointer;
-        }
+        var variablePosition = generator.GetRelativeVariablePosition(identifier);
+        var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
+
+        generator.output += "    xor rax, rax\n";
+        generator.output += $"    lea rax, [{assemblyString}] ; &{variable!.Value.Type.Keyword} {identifier} variable\n";
+        generator.Push("rax");
+
+        return new Pointer { RepresentingType = variable!.Value.Type };
     }
 }

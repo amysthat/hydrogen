@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Hydrogen.Generation;
 using Hydrogen.Generation.Variables;
 using Hydrogen.Tokenization;
+using Pointer = Hydrogen.Generation.Variables.Pointer;
 
 namespace Hydrogen.Parsing;
 
@@ -36,13 +37,13 @@ public partial class Parser(List<Token> tokens)
             };
         }
         else if (TryConsume(TokenType.Identifier, out var identToken))
-            return new NodeTermIdentifier { Identifier = identToken!.Value, VarToPtr = false };
+            return new NodeTermIdentifier { Identifier = identToken!.Value };
         else if (TryConsume(TokenType.VarToPtr, out _))
         {
             TryPeek(TokenType.Identifier, identToken => ErrorExpected("identifier after pointer", identToken.LineNumber));
             identToken = Consume();
 
-            return new NodeTermIdentifier { Identifier = identToken!.Value, VarToPtr = true };
+            return new NodeTermPointer { Identifier = new NodeTermIdentifier { Identifier = identToken!.Value } };
         }
         else if (TryConsume(TokenType.OpenParenthesis, out _))
         {
@@ -54,7 +55,7 @@ public partial class Parser(List<Token> tokens)
                 Environment.Exit(1);
             }
 
-            if (TryPeek(TokenType.CloseParenthesis, "')' expected after parenthesis for expression."))
+            if (TryPeek(TokenType.CloseParenthesis, errToken => ErrorExpected("')' after parenthesis for expression", errToken.LineNumber)))
                 Consume();
 
             return new NodeTermParen { Expression = expression };
@@ -238,15 +239,21 @@ public partial class Parser(List<Token> tokens)
         }
 
         string variableTypeStr = token.Value!;
-
         var variableType = (VariableType)Activator.CreateInstance(Assembly.GetExecutingAssembly().GetType(variableTypeStr)!)!;
+
+        bool isPointer = Peek()?.Type == TokenType.Star;
+
+        if (isPointer)
+        {
+            Consume();
+
+            variableType = new Pointer { RepresentingType = variableType };
+        }
 
         return variableType;
     }
 
-#pragma warning disable CA1822 // Mark members as static
     public void ErrorExpected(string message, int line)
-#pragma warning restore CA1822 // Mark members as static
     {
         Console.ForegroundColor = ConsoleColor.Red;
         Console.Error.WriteLine($"Parse Error: Expected {message} on line {line}.");
@@ -277,23 +284,6 @@ public partial class Parser(List<Token> tokens)
         }
 
         return tokens[position + offset];
-    }
-
-    public bool TryPeek(TokenType type, string errorMessage, int offset = 0)
-    {
-        var token = Peek(offset);
-
-        if (token == null)
-            return false;
-
-        if (token.Value.Type != type)
-        {
-            Console.Error.WriteLine(errorMessage);
-            Environment.Exit(1);
-            return false;
-        }
-
-        return true;
     }
 
     public bool TryPeek(TokenType type, Action<Token> error, int offset = 0)
