@@ -103,7 +103,7 @@ public partial class Parser(List<Token> tokens)
             if (!currentToken.HasValue)
                 break;
 
-            int? precedence = GlobalTokenization.GetBinaryPrecedence(currentToken.Value);
+            int? precedence = GetBinaryPrecedence(currentToken.Value);
 
             if (!precedence.HasValue || precedence.Value < minimumPrecedence)
                 break;
@@ -138,6 +138,16 @@ public partial class Parser(List<Token> tokens)
         }
 
         return lhsExpr;
+    }
+
+    private static int? GetBinaryPrecedence(Token token)
+    {
+        return token.Type switch
+        {
+            TokenType.Plus or TokenType.Minus => 0,
+            TokenType.Star or TokenType.Slash => 1,
+            _ => null,
+        };
     }
 
     public NodeStatement? ParseStatement()
@@ -260,9 +270,7 @@ public partial class Parser(List<Token> tokens)
         Environment.Exit(1);
     }
 
-#pragma warning disable CA1822 // Mark members as static
     public void ErrorInvalid(string message, int line)
-#pragma warning restore CA1822 // Mark members as static
     {
         Console.ForegroundColor = ConsoleColor.Red;
         Console.Error.WriteLine($"Parse Error: Invalid {message} on line {line}.");

@@ -19,7 +19,7 @@ internal static class Keywords
 
                 if (varType.Keyword == keyword)
                 {
-                    return Token(TokenType.VariableType, varType.ToString()!);
+                    return Token(TokenType.VariableType, varType.GetType().FullName!);
                 }
             }
 

@@ -36,6 +36,8 @@ public abstract class VariableType
     }
 
     public override int GetHashCode() => Keyword.GetHashCode();
+
+    public override string ToString() => Keyword;
 }
 
 public abstract class IntegerType : VariableType
@@ -72,11 +74,6 @@ public struct Variable
     public required VariableType Type;
 
     public required Scope Owner;
-
-    /// <summary>
-    /// To be used with the `mov` instruction.
-    /// </summary>
-    public long GetBasePositionWithSize() => BaseStackDifference + Size - 1;
 
     public static bool IsSignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.SignedInteger;
     public static bool IsUnsignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.UnsignedInteger;

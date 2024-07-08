@@ -11,7 +11,7 @@ public static class Statements
 
         if (exitExprType is not Byte)
         {
-            Console.Error.WriteLine($"Invalid expression type on exit. Expected Byte and got {exitExprType}.");
+            Console.Error.WriteLine($"Invalid expression type on exit. Expected byte and got {exitExprType.Keyword}.");
             Environment.Exit(1);
         }
 
