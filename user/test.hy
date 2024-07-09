@@ -4,4 +4,6 @@ zvar : byte = xvar;
 
 fvar : byte* = &zvar;
 
-exit *fvar;
+text : char = 'A';
+
+exit byte cast text;

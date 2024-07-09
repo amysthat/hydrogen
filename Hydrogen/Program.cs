@@ -21,6 +21,22 @@ internal class Program
 #endif
         }
 
+        if (args.Contains("/h") || args.Contains("/?") || args.Length == 1)
+        {
+            Console.ForegroundColor = ConsoleColor.Gray;
+
+            Console.WriteLine("Usage: hydrogen <input.hy>");
+            Console.WriteLine("Arguments:");
+            Console.WriteLine(" /exporttokens - Export tokens to tokens.txt");
+            Console.WriteLine(" /dontassemble - Don't assemble compiled assembly");
+            Console.WriteLine(" /nocleanup - Don't clean up out.o and out.asm afterwards");
+            Console.WriteLine();
+            Console.WriteLine("Recommended arguments:");
+            Console.WriteLine(" /optimizepushpull - Remove unnecessary push pull usage");
+
+            return 0;
+        }
+
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("hydrogen Compiler - working beta 0.1");
         Console.ForegroundColor = ConsoleColor.Gray;
@@ -58,12 +74,15 @@ internal class Program
         var tree = parser.ParseProgram();
 
         Console.WriteLine("Compiling...");
-        var generator = new Generator(tree!);
+        var generator = new Generator(tree!)
+        {
+            performPushPullOptimization = args.Contains("/optimizepushpull"),
+        };
         string asm = generator.GenerateProgram();
 
         File.WriteAllText("out.asm", asm);
 
-        if (args.Contains("/noasmcompile"))
+        if (args.Contains("/dontassemble"))
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("\"/noasmcompile\" flag is set. Will not compile.");

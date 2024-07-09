@@ -9,6 +9,7 @@ public class Generator(NodeProgram program)
     public string output = string.Empty;
     public int labelCount;
     public Scope workingScope = null!;
+    public bool performPushPullOptimization;
 
     public VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
     {
@@ -26,6 +27,9 @@ public class Generator(NodeProgram program)
 
         if (term is NodeTermParen termParenthesis)
             return GenerateExpression(termParenthesis.Expression, suggestionType);
+
+        if (term is NodeTermChar termChar)
+            return Terms.GenerateChar(this, termChar);
 
         throw new InvalidProgramException("Reached unreachable state on GenerateTerm().");
     }
@@ -101,7 +105,10 @@ public class Generator(NodeProgram program)
         output += "    xor rdi, rdi\n";
         output += "    syscall\n";
 
-        return OptimizeHorribly(output);
+        if (performPushPullOptimization)
+            return OptimizeHorribly(output);
+        else
+            return output;
     }
 
     #region Scopes

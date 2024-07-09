@@ -1,5 +1,7 @@
+using System.Text;
 using Hydrogen.Generation.Variables;
 using Hydrogen.Parsing;
+using Hydrogen.Tokenization;
 
 namespace Hydrogen.Generation;
 
@@ -107,5 +109,16 @@ public static class Terms
         generator.Push("rax");
 
         return pointerType.RepresentingType;
+    }
+
+    public static VariableType GenerateChar(Generator generator, NodeTermChar termChar)
+    {
+        byte @byte = Encoding.ASCII.GetBytes(@termChar.Char.Value!)[0];
+
+        generator.output += $"    xor rax, rax ; '{termChar.Char.Value!}'\n";
+        generator.output += $"    mov al, {@byte}\n";
+        generator.Push("rax");
+
+        return VariableTypes.Char;
     }
 }

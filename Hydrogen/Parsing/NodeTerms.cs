@@ -27,6 +27,11 @@ public struct NodeTermParen : NodeTerm
     public NodeExpression Expression;
 }
 
+public struct NodeTermChar : NodeTerm
+{
+    public Token Char;
+}
+
 public interface NodeTerm : NodeExpression
 {
 }

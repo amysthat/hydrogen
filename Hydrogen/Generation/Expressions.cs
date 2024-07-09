@@ -56,7 +56,8 @@ public static class Expressions
 
         if (targetType == expressionType)
         {
-            Console.WriteLine($"Warning: Redundant cast of {targetType.Keyword}.");
+            Console.WriteLine($"Warning: Redundant cast of {targetType.Keyword} to {targetType.Keyword}.");
+            return targetType!;
         }
 
         Variable.Cast(generator, expressionType, targetType);

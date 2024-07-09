@@ -67,6 +67,10 @@ public partial class Parser(List<Token> tokens)
 
             return new NodeTermParen { Expression = expression };
         }
+        else if (TryConsume(TokenType.Char, out var charToken))
+        {
+            return new NodeTermChar { Char = charToken!.Value };
+        }
 
         return null;
     }
@@ -252,7 +256,7 @@ public partial class Parser(List<Token> tokens)
 
         if (token.Type != TokenType.VariableType)
         {
-            throw new Exception($"ParseVariableType() called for {token.Type}.");
+            ErrorExpected("variable type", token.LineNumber);
         }
 
         string variableTypeStr = token.Value!;

@@ -41,6 +41,7 @@ $$
                         ([\text{expr}]) \\
                         [\text{pointer}] \\
                         *[\text{pointer}] \\
+                        \text{'}char\text{'} \\
                         \end{cases} \\
 
     [\text{integer}] &\to \begin{cases}
@@ -56,6 +57,7 @@ $$
                         \text{u32} \\
                         \text{byte} \\
                         [\text{varType}]* \\
+                        \text{char} \\
                         \end{cases} \\
     
     [\text{pointer}] &\to \begin{cases}

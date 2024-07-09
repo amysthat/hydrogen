@@ -19,7 +19,7 @@ internal static class SingleCharTokenizer
         else
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.Error.WriteLine($"Unknown standalone character: '{c}'.");
+            Console.Error.WriteLine($"Tokenization Error: Unknown standalone character: '{c}' on line {lineCount}.");
             Environment.Exit(1);
             return new Token(); // Unreachable code
         }

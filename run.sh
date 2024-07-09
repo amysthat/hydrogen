@@ -1,1 +1,1 @@
-dotnet run --project Hydrogen user/test.hy
+dotnet run --project Hydrogen user/test.hy /optimizepushpull

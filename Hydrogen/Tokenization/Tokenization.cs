@@ -55,6 +55,24 @@ public class Tokenizer(string source)
                 continue;
             }
 
+            if (peekedChar == '\'')
+            {
+                Consume(); // '
+                buf = Consume()!.Value.ToString(); // char
+                var endChar = Consume();
+
+                if (!endChar.HasValue || endChar.Value != '\'')
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Error.WriteLine($"Tokenization Error: Only 1 character allowed for char on line {lineCount}.");
+                    Environment.Exit(1);
+                }
+
+                tokens.Add(new Token { Type = TokenType.Char, Value = buf, LineNumber = lineCount });
+                buf = string.Empty;
+                continue;
+            }
+
             if (HandleComments())
                 continue;
 

@@ -13,6 +13,9 @@ public static class VariableTypes
     public static SignedInteger16 SignedInteger16 => new();
     public static UnsignedInteger16 UnsignedInteger16 => new();
     public static Byte Byte => new();
+
+    // Other
+    public static Char Char => new();
 }
 
 public abstract class VariableType

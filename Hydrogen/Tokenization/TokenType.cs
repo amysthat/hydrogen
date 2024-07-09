@@ -31,4 +31,6 @@ public enum TokenType
     VariableType,
 
     VarToPtr,
+
+    Char,
 }
