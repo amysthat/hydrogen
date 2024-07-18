@@ -5,6 +5,7 @@ $$
 
     [\text{stmt}] &\to \begin{cases} 
                         \text{exit} \space [\text{expr}]; \\
+                        \text{write} \space [\text{char*}]; \\
                         \text{ident} : [\text{varType}] = [\text{expr}]; \\
                         \text{ident} = [\text{expr}]; \\
                         [\text{scope}] \\

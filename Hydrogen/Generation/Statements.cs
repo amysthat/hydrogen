@@ -1,5 +1,6 @@
 using Hydrogen.Generation.Variables;
 using Hydrogen.Parsing;
+using Char = Hydrogen.Generation.Variables.Char;
 
 namespace Hydrogen.Generation;
 
@@ -17,6 +18,30 @@ public static class Statements
 
         generator.output += "    mov rax, 60 ; exit\n";
         generator.Pop("rdi");
+        generator.output += "    syscall\n";
+    }
+
+    public static void Write(Generator generator, NodeStmtWrite writeStatement)
+    {
+        Pointer expectedType = new Pointer { RepresentingType = VariableTypes.Char };
+
+        var writeExprType = generator.GenerateExpression(writeStatement.CharPointer, expectedType);
+
+        var isTypeInvalid = writeExprType is not Pointer;
+
+        if (!isTypeInvalid)
+            isTypeInvalid = (writeExprType as Pointer)!.RepresentingType is not Char;
+
+        if (isTypeInvalid)
+        {
+            Console.Error.WriteLine($"Invalid expression type on exit. Expected {expectedType} and got {writeExprType}.");
+            Environment.Exit(1);
+        }
+
+        generator.output += "    mov rax, 1 ; write\n";
+        generator.output += "    mov rdi, 1 ; stdout\n";
+        generator.Pop("rsi");
+        generator.output += "    mov rdx, 1 ; length\n";
         generator.output += "    syscall\n";
     }
 

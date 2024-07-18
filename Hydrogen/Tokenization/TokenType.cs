@@ -3,6 +3,7 @@
 public enum TokenType
 {
     Exit,
+    Write, // TODO: Export to proper method
 
     If,
     Elif,

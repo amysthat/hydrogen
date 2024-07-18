@@ -7,6 +7,10 @@ public struct NodeStmtExit : NodeStatement
 {
     public NodeExpression ReturnCodeExpression;
 }
+public struct NodeStmtWrite : NodeStatement
+{
+    public NodeExpression CharPointer;
+}
 public struct NodeStmtVariable : NodeStatement
 {
     public Token Identifier;
@@ -73,6 +77,28 @@ internal static class NodeStatements
         }
 
         return exitStatement;
+    }
+
+    public static NodeStmtWrite ParseWrite(Parser parser)
+    {
+        var writeToken = parser.Consume()!.Value;
+
+        var nodeExpr = parser.ParseExpression(); // return code
+
+        if (nodeExpr == null)
+        {
+            parser.ErrorInvalid("expression after 'exit'", writeToken.LineNumber);
+            return new NodeStmtWrite(); // Unreachable
+        }
+
+        var writeStatement = new NodeStmtWrite { CharPointer = nodeExpr };
+
+        if (parser.TryPeek(TokenType.Semicolon, token => parser.ErrorExpected("';' after 'write'", token.LineNumber)))
+        {
+            parser.Consume(); // ";"
+        }
+
+        return writeStatement;
     }
 
     public static NodeStmtVariable ParseVariableStatement(Parser parser)

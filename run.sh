@@ -1,1 +1,1 @@
-dotnet run --project Hydrogen user/test.hy /optimizepushpull
+dotnet run --project Hydrogen user/test.hy /optimizepushpull /exporttokens

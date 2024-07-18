@@ -1,9 +1,27 @@
-xvar : byte = 152;
-yvar : i64 = -1365153153151351;
-zvar : byte = xvar;
+text1 : char =  'H';
+text2 : char =  'e';
+text3 : char =  'l';
+text4 : char =  'l';
+text5 : char =  'o';
+text6 : char =  ',';
+text7 : char =  ' ';
+text8 : char =  'w';
+text9 : char =  'o';
+text10 : char = 'r';
+text11 : char = 'l';
+text12 : char = 'd';
+text13 : char = '!';
 
-fvar : byte* = &zvar;
-
-text : char = 'A';
-
-exit byte cast text;
+write &text1;
+write &text2;
+write &text3;
+write &text4;
+write &text5;
+write &text6;
+write &text7;
+write &text8;
+write &text9;
+write &text10;
+write &text11;
+write &text12;
+write &text13;

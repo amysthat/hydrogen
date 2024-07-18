@@ -57,6 +57,13 @@ public class Generator(NodeProgram program)
             return;
         }
 
+        if (statement is NodeStmtWrite writeStatement)
+        {
+            Statements.Write(this, writeStatement);
+            output += "\n";
+            return;
+        }
+
         if (statement is NodeStmtVariable variableStatement)
         {
             Statements.VariableStatement(this, variableStatement);

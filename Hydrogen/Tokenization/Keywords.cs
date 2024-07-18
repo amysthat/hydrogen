@@ -11,6 +11,7 @@ internal static class Keywords
         else if (keyword == "elif") return Token(TokenType.Elif);
         else if (keyword == "else") return Token(TokenType.Else);
         else if (keyword == "cast") return Token(TokenType.Cast);
+        else if (keyword == "write") return Token(TokenType.Write);
         else
         {
             foreach (var property in typeof(VariableTypes).GetProperties())

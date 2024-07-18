@@ -168,6 +168,11 @@ public partial class Parser(List<Token> tokens)
             return NodeStatements.ParseExit(this);
         }
 
+        if (TryPeek(TokenType.Write))
+        {
+            return NodeStatements.ParseWrite(this);
+        }
+
         if (TryPeek(TokenType.Identifier) && TryPeek(TokenType.VariableHint, 1)) // variable statement
         {
             return NodeStatements.ParseVariableStatement(this);

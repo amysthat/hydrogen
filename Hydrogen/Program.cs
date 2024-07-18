@@ -15,14 +15,6 @@ internal class Program
             args = ["user/test.hy"];
             Directory.SetCurrentDirectory(Path.Combine(Directory.GetCurrentDirectory(), ".."));
 #elif RELEASE
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Incorrect usage. Correct usage:\n -> hydrogen <input.hy>");
-            return 1;
-#endif
-        }
-
-        if (args.Contains("/h") || args.Contains("/?") || args.Length == 1)
-        {
             Console.ForegroundColor = ConsoleColor.Gray;
 
             Console.WriteLine("Usage: hydrogen <input.hy>");
@@ -33,8 +25,8 @@ internal class Program
             Console.WriteLine();
             Console.WriteLine("Recommended arguments:");
             Console.WriteLine(" /optimizepushpull - Remove unnecessary push pull usage");
-
             return 0;
+#endif
         }
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
@@ -123,7 +115,7 @@ internal class Program
 
     private static void Compile()
     {
-        if (RunCommand("nasm -felf64 out.asm") != 0)
+        if (RunCommand("nasm -f elf64 out.asm") != 0)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Assembling failed. This is a fault of the compiler, not a user error.");
