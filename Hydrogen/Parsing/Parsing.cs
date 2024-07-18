@@ -71,6 +71,10 @@ public partial class Parser(List<Token> tokens)
         {
             return new NodeTermChar { Char = charToken!.Value };
         }
+        else if (TryConsume(TokenType.String, out var stringToken))
+        {
+            return new NodeTermString { String = stringToken!.Value };
+        }
 
         return null;
     }
@@ -80,7 +84,7 @@ public partial class Parser(List<Token> tokens)
         if (!Peek().HasValue)
             return null;
 
-        if (TryPeek(TokenType.Cast, 1))
+        if (TryPeek(TokenType.Cast, 1) || TryPeek(TokenType.Cast, 2))
         {
             var varType = ParseVariableType();
 

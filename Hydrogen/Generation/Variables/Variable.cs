@@ -16,6 +16,7 @@ public static class VariableTypes
 
     // Other
     public static Char Char => new();
+    public static String String => new();
 }
 
 public abstract class VariableType
@@ -70,7 +71,7 @@ public enum IntegerSignedness
 
 public struct Variable
 {
-    public required long BaseStackDifference;
+    public required long RelativePosition;
     public required long Size;
 
     public required string Name;

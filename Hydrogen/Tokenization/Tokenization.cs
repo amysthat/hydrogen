@@ -73,6 +73,41 @@ public class Tokenizer(string source)
                 continue;
             }
 
+            if (peekedChar == '"')
+            {
+                Consume(); // "
+
+                while (true)
+                {
+                    if (Peek().HasValue && Peek()!.Value == '\n')
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine($"Tokenization Error: Strings do not allow multiple lines on line {lineCount}.");
+                        Environment.Exit(1);
+                    }
+
+                    if (!Peek().HasValue || !Peek(1).HasValue)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Error.WriteLine($"Tokenization Error: Reached end of string prematurely on line {lineCount}.");
+                        Environment.Exit(1);
+                    }
+
+                    var value = Consume()!.Value;
+
+                    if (value == '"')
+                    {
+                        break;
+                    }
+
+                    buf += value;
+                }
+
+                tokens.Add(new Token { Type = TokenType.String, Value = buf, LineNumber = lineCount });
+                buf = string.Empty;
+                continue;
+            }
+
             if (HandleComments())
                 continue;
 

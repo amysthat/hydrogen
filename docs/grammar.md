@@ -5,7 +5,7 @@ $$
 
     [\text{stmt}] &\to \begin{cases} 
                         \text{exit} \space [\text{expr}]; \\
-                        \text{write} \space [\text{char*}]; \\
+                        \text{write} \space [\text{string}]; \\
                         \text{ident} : [\text{varType}] = [\text{expr}]; \\
                         \text{ident} = [\text{expr}]; \\
                         [\text{scope}] \\
@@ -43,6 +43,7 @@ $$
                         [\text{pointer}] \\
                         *[\text{pointer}] \\
                         \text{'}char\text{'} \\
+                        \text{"}string\text{"} \\
                         \end{cases} \\
 
     [\text{integer}] &\to \begin{cases}
@@ -59,6 +60,7 @@ $$
                         \text{byte} \\
                         [\text{varType}]* \\
                         \text{char} \\
+                        \text{string} \\
                         \end{cases} \\
     
     [\text{pointer}] &\to \begin{cases}

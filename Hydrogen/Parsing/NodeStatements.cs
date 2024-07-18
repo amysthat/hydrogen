@@ -87,7 +87,7 @@ internal static class NodeStatements
 
         if (nodeExpr == null)
         {
-            parser.ErrorInvalid("expression after 'exit'", writeToken.LineNumber);
+            parser.ErrorInvalid("expression after 'write'", writeToken.LineNumber);
             return new NodeStmtWrite(); // Unreachable
         }
 

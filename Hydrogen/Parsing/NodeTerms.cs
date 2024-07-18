@@ -31,6 +31,10 @@ public struct NodeTermChar : NodeTerm
 {
     public Token Char;
 }
+public struct NodeTermString : NodeTerm
+{
+    public Token String;
+}
 
 public interface NodeTerm : NodeExpression
 {

@@ -1,6 +1,6 @@
 using Hydrogen.Generation.Variables;
 using Hydrogen.Parsing;
-using Char = Hydrogen.Generation.Variables.Char;
+using String = Hydrogen.Generation.Variables.String;
 
 namespace Hydrogen.Generation;
 
@@ -23,25 +23,38 @@ public static class Statements
 
     public static void Write(Generator generator, NodeStmtWrite writeStatement)
     {
-        Pointer expectedType = new Pointer { RepresentingType = VariableTypes.Char };
+        var writeExprType = generator.GenerateExpression(writeStatement.CharPointer, VariableTypes.String);
 
-        var writeExprType = generator.GenerateExpression(writeStatement.CharPointer, expectedType);
-
-        var isTypeInvalid = writeExprType is not Pointer;
-
-        if (!isTypeInvalid)
-            isTypeInvalid = (writeExprType as Pointer)!.RepresentingType is not Char;
-
-        if (isTypeInvalid)
+        if (writeExprType is not String)
         {
-            Console.Error.WriteLine($"Invalid expression type on exit. Expected {expectedType} and got {writeExprType}.");
+            Console.Error.WriteLine($"Invalid expression type on exit. Expected {VariableTypes.String} and got {writeExprType}.");
             Environment.Exit(1);
         }
 
+        generator.Pop("rax ; Calculate length");
+        generator.Push("rax");
+        generator.Push("rax");
+
+        generator.Pop("rax");
+        generator.output += "    xor rbx, rbx\n";
+        generator.output += "\n";
+
+        var loopLabel = "label" + generator.labelCount++;
+        var finishLabel = "label" + generator.labelCount++;
+
+        generator.output += $"    {loopLabel}:\n";
+        generator.output += "    cmp byte [rax + rbx], 0\n";
+        generator.output += $"    je {finishLabel}\n";
+        generator.output += "    inc rbx\n";
+        generator.output += $"    jmp {loopLabel}\n";
+
+        generator.output += $"    {finishLabel}:\n";
+        generator.output += "    push rbx\n";
+
         generator.output += "    mov rax, 1 ; write\n";
         generator.output += "    mov rdi, 1 ; stdout\n";
-        generator.Pop("rsi");
-        generator.output += "    mov rdx, 1 ; length\n";
+        generator.Pop("rdx ; Length");
+        generator.Pop("rsi ; Data");
         generator.output += "    syscall\n";
     }
 

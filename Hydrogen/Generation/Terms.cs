@@ -121,4 +121,18 @@ public static class Terms
 
         return VariableTypes.Char;
     }
+
+    public static VariableType GenerateString(Generator generator, NodeTermString termString)
+    {
+        string @string = termString.String.Value!;
+
+        var dataName = $"data{generator.dataCount++}";
+
+        generator.dataSection.Add($"    {dataName}: db '{@string}', 0");
+
+        generator.output += $"    lea rax, [{dataName}]\n";
+        generator.Push("rax");
+
+        return VariableTypes.String;
+    }
 }

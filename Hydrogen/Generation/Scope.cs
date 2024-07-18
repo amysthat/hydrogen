@@ -18,7 +18,7 @@ public class Scope
         var variable = new Variable
         {
             Type = type,
-            BaseStackDifference = variablePosition,
+            RelativePosition = variablePosition,
             Size = Variable.GetSize(type),
             Owner = this,
             Name = variableName,

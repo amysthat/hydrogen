@@ -11,6 +11,9 @@ public class Generator(NodeProgram program)
     public Scope workingScope = null!;
     public bool performPushPullOptimization;
 
+    public int dataCount;
+    public List<string> dataSection = [];
+
     public VariableType GenerateTerm(NodeTerm term, VariableType suggestionType)
     {
         if (term is NodeTermInteger termInteger)
@@ -30,6 +33,9 @@ public class Generator(NodeProgram program)
 
         if (term is NodeTermChar termChar)
             return Terms.GenerateChar(this, termChar);
+
+        if (term is NodeTermString termString)
+            return Terms.GenerateString(this, termString);
 
         throw new InvalidProgramException("Reached unreachable state on GenerateTerm().");
     }
@@ -112,6 +118,20 @@ public class Generator(NodeProgram program)
         output += "    xor rdi, rdi\n";
         output += "    syscall\n";
 
+        if (dataSection.Count > 0)
+        {
+            var dataSectionOutput = "section .data\n";
+
+            foreach (var data in dataSection)
+            {
+                dataSectionOutput += data + "\n";
+            }
+
+            dataSectionOutput += "\n";
+
+            output = dataSectionOutput + output;
+        }
+
         if (performPushPullOptimization)
             return OptimizeHorribly(output);
         else
@@ -178,7 +198,7 @@ public class Generator(NodeProgram program)
             if (currentScope.variables.ContainsKey(variableName))
             {
                 stackDifference += 8; // Account for scopes's base stack register
-                stackDifference += currentScope.variables.GetValueByKey(variableName).BaseStackDifference;
+                stackDifference += currentScope.variables.GetValueByKey(variableName).RelativePosition;
                 return stackDifference;
             }
 
