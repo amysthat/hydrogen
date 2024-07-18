@@ -23,7 +23,9 @@ public static class Statements
 
     public static void Write(Generator generator, NodeStmtWrite writeStatement)
     {
-        var writeExprType = generator.GenerateExpression(writeStatement.CharPointer, VariableTypes.String);
+        generator.output += "    ; write\n";
+
+        var writeExprType = generator.GenerateExpression(writeStatement.String, VariableTypes.String);
 
         if (writeExprType is not String)
         {
@@ -31,30 +33,24 @@ public static class Statements
             Environment.Exit(1);
         }
 
-        generator.Pop("rax ; Calculate length");
-        generator.Push("rax");
-        generator.Push("rax");
-
-        generator.Pop("rax");
-        generator.output += "    xor rbx, rbx\n";
-        generator.output += "\n";
+        generator.Pop("rsi ; String pointer");
+        generator.output += "    xor rdx, rdx\n";
 
         var loopLabel = "label" + generator.labelCount++;
         var finishLabel = "label" + generator.labelCount++;
 
-        generator.output += $"    {loopLabel}:\n";
-        generator.output += "    cmp byte [rax + rbx], 0\n";
+        generator.output += $"    {loopLabel}: ; Find length of null-terminated string\n";
+        generator.output += "    cmp byte [rsi + rdx], 0\n";
         generator.output += $"    je {finishLabel}\n";
-        generator.output += "    inc rbx\n";
+        generator.output += "    inc rdx\n";
         generator.output += $"    jmp {loopLabel}\n";
 
         generator.output += $"    {finishLabel}:\n";
-        generator.output += "    push rbx\n";
-
-        generator.output += "    mov rax, 1 ; write\n";
+        generator.output += "    ; sys_write(stdout, char*, strlen)\n";
+        generator.output += "    mov rax, 1\n";
         generator.output += "    mov rdi, 1 ; stdout\n";
-        generator.Pop("rdx ; Length");
-        generator.Pop("rsi ; Data");
+        generator.output += "    ; Data (rsi is already set)\n";
+        generator.output += "    ; Length (rdx is already set)\n";
         generator.output += "    syscall\n";
     }
 

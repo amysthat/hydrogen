@@ -82,7 +82,7 @@ public class Tokenizer(string source)
                     if (Peek().HasValue && Peek()!.Value == '\n')
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.WriteLine($"Tokenization Error: Strings do not allow multiple lines on line {lineCount}.");
+                        Console.Error.WriteLine($"Tokenization Error: Multiple lined string found on line {lineCount}.\nPlease keep the string in a single line.\nUse '\\n' if you want to store multiple lines");
                         Environment.Exit(1);
                     }
 
@@ -98,6 +98,15 @@ public class Tokenizer(string source)
                     if (value == '"')
                     {
                         break;
+                    }
+
+                    if (value == '\\')
+                    {
+                        if (Peek().HasValue && Peek()!.Value == 'n') // Newline \n
+                        {
+                            Consume();
+                            value = '\n';
+                        }
                     }
 
                     buf += value;

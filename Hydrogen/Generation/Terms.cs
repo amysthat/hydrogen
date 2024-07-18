@@ -126,6 +126,9 @@ public static class Terms
     {
         string @string = termString.String.Value!;
 
+        @string = @string.Replace("\'", "', 39, '");
+        @string = @string.Replace("\n", "', 10, '");
+
         var dataName = $"data{generator.dataCount++}";
 
         generator.dataSection.Add($"    {dataName}: db '{@string}', 0");

@@ -9,7 +9,7 @@ public struct NodeStmtExit : NodeStatement
 }
 public struct NodeStmtWrite : NodeStatement
 {
-    public NodeExpression CharPointer;
+    public NodeExpression String;
 }
 public struct NodeStmtVariable : NodeStatement
 {
@@ -91,7 +91,7 @@ internal static class NodeStatements
             return new NodeStmtWrite(); // Unreachable
         }
 
-        var writeStatement = new NodeStmtWrite { CharPointer = nodeExpr };
+        var writeStatement = new NodeStmtWrite { String = nodeExpr };
 
         if (parser.TryPeek(TokenType.Semicolon, token => parser.ErrorExpected("';' after 'write'", token.LineNumber)))
         {
