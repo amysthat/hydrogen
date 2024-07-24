@@ -50,11 +50,11 @@ public class Compiler(string compilationFile, bool printStage = false)
         }
 
         Print("Assembling...");
-        if (RunCommand("nasm -f elf64 out.asm", args.objPath) != 0)
+        if (CommandLineUtility.RunCommand("nasm -f elf64 out.asm", args.objPath) != 0)
             throw new AssemblationException();
 
         Print("Linking...");
-        if (RunCommand($"ld -o \"{Path.Combine(args.finalExecutablePath, "out")}\" out.o", args.objPath) != 0)
+        if (CommandLineUtility.RunCommand($"ld -o \"{Path.Combine(args.finalExecutablePath, "out")}\" out.o", args.objPath) != 0)
             throw new LinkingException();
     }
 
@@ -79,42 +79,6 @@ public class Compiler(string compilationFile, bool printStage = false)
         }
 
         File.WriteAllText(Path.Combine(objPath, "tokens.txt"), output);
-    }
-
-    private static int RunCommand(string command, string objPath)
-    {
-        Process process = new Process();
-        process.StartInfo.FileName = "/bin/bash";
-        process.StartInfo.Arguments = "-c \"" + command + "\"";
-        process.StartInfo.RedirectStandardOutput = true;
-        process.StartInfo.RedirectStandardError = true;
-        process.StartInfo.UseShellExecute = false;
-        process.StartInfo.CreateNoWindow = true;
-        process.StartInfo.WorkingDirectory = objPath;
-
-        process.OutputDataReceived += (sender, e) =>
-        {
-            if (!string.IsNullOrEmpty(e.Data))
-            {
-                Console.Out.WriteLine(e.Data);
-            }
-        };
-
-        process.ErrorDataReceived += (sender, e) =>
-        {
-            if (!string.IsNullOrEmpty(e.Data))
-            {
-                Console.Error.WriteLine(e.Data);
-            }
-        };
-
-        process.Start();
-
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        process.WaitForExit();
-        return process.ExitCode;
     }
 }
 
