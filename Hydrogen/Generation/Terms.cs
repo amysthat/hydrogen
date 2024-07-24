@@ -38,7 +38,7 @@ public static class Terms
             throw new InvalidOperationException();
         }
 
-        var variablePosition = generator.GetRelativeVariablePosition(identifier) + variable.Value.Size - 1;
+        var variablePosition = generator.GetRelativeVariablePosition(identifier);
         var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
         var asmPointerSize = integerType.AsmPointerSize;
         var aRegister = integerType.AsmARegister;
@@ -98,7 +98,7 @@ public static class Terms
 
         var targetType = (pointerType.RepresentingType as IntegerType)!;
 
-        var variablePosition = generator.GetRelativeVariablePosition(identifier) + pointerType.Size - 1;
+        var variablePosition = generator.GetRelativeVariablePosition(identifier);
         var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
         var pointerSize = targetType.AsmPointerSize;
 

@@ -199,7 +199,7 @@ public class Generator(NodeProgram program)
             {
                 stackDifference += 8; // Account for scopes's base stack register
                 stackDifference += currentScope.variables.GetValueByKey(variableName).RelativePosition;
-                return stackDifference;
+                return stackDifference + currentScope.variables.GetValueByKey(variableName).Size - 1;
             }
 
             stackDifference -= 128; // Currently, a static 128 bytes is allocated for stack sizes

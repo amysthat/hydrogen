@@ -30,7 +30,7 @@ internal class Program
         }
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("hydrogen Compiler - working beta 0.1");
+        Console.WriteLine("hydrogen Compiler - beta 0.1");
         Console.ForegroundColor = ConsoleColor.Gray;
 
         if (!File.Exists(args[0]))

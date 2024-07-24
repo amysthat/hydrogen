@@ -39,13 +39,13 @@ public static class Statements
         var loopLabel = "label" + generator.labelCount++;
         var finishLabel = "label" + generator.labelCount++;
 
-        generator.output += $"    {loopLabel}: ; Find length of null-terminated string\n";
+        generator.output += $"{loopLabel}: ; Find length of null-terminated string\n";
         generator.output += "    cmp byte [rsi + rdx], 0\n";
         generator.output += $"    je {finishLabel}\n";
         generator.output += "    inc rdx\n";
         generator.output += $"    jmp {loopLabel}\n";
 
-        generator.output += $"    {finishLabel}:\n";
+        generator.output += $"{finishLabel}:\n";
         generator.output += "    ; sys_write(stdout, char*, strlen)\n";
         generator.output += "    mov rax, 1\n";
         generator.output += "    mov rdi, 1 ; stdout\n";
@@ -79,7 +79,7 @@ public static class Statements
         generator.workingScope.DefineVariable(identifier, variableType);
 
         string variableARegister = (variableType as IntegerType)!.AsmARegister;
-        long relativePosition = generator.GetRelativeVariablePosition(identifier) + variableType.Size - 1;
+        long relativePosition = generator.GetRelativeVariablePosition(identifier);
         string relativePositionAsm = Generator.CastRelativeVariablePositionToAssembly(relativePosition);
 
         generator.Pop(variableARegister);
@@ -127,7 +127,7 @@ public static class Statements
         var finalLabelIndex = generator.labelCount + ifStatement.Elifs.Count + (ifStatement.Else.HasValue ? 1 : 0);
 
         generator.GenerateExpression(ifStatement.This.Expression, VariableTypes.SignedInteger64);
-        generator.output += "    xor rax, rax ; Clear out rax for if statement";
+        generator.output += "    xor rax, rax ; Clear out rax for if statement\n";
         generator.Pop("rax");
         generator.output += $"    cmp rax, 0\n";
         generator.output += $"    je label{generator.labelCount}\n";
@@ -154,6 +154,8 @@ public static class Statements
         }
 
         generator.output += $"label{finalLabelIndex}:\n";
+
+        generator.labelCount++; // account for final label
     }
 
     public static long GetSize(NodeStatement nodeStatement)
