@@ -21,7 +21,6 @@ internal class Program
             Console.WriteLine("Arguments:");
             Console.WriteLine(" /exporttokens - Export tokens to tokens.txt");
             Console.WriteLine(" /dontassemble - Don't assemble compiled assembly");
-            Console.WriteLine(" /nocleanup - Don't clean up out.o and out.asm afterwards");
             Console.WriteLine();
             Console.WriteLine("Recommended arguments:");
             Console.WriteLine(" /optimizepushpull - Remove unnecessary push pull usage");
@@ -40,63 +39,42 @@ internal class Program
             return 1;
         }
 
-        string content;
-        try
-        {
-            content = File.ReadAllText(args[0]);
-        }
-        catch (Exception ex)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error opening file: " + ex.Message);
-            return 1;
-        }
-
         DateTime startTime = DateTime.Now;
 
-        Console.WriteLine("Tokenizing...");
-        var tokenizer = new Tokenizer(content);
-        var tokens = tokenizer.Tokenize();
+        var objPath = Path.Combine(Directory.GetCurrentDirectory(), "obj");
+        if (!Directory.Exists(objPath))
+            Directory.CreateDirectory(objPath);
 
-        if (args.Contains("/exporttokens"))
-            ExportTokens(tokens);
-
-        Console.WriteLine("Parsing...");
-        var parser = new Parser(tokens);
-        var tree = parser.ParseProgram();
-
-        Console.WriteLine("Compiling...");
-        var generator = new Generator(tree!)
+        var compiler = new Compiler(args[0], printStage: true);
+        var compilerArgs = new CompilerArgs
         {
-            performPushPullOptimization = args.Contains("/optimizepushpull"),
+            pushPullOptimization = args.Contains("/optimizepushpull"),
+            dontAssemble = args.Contains("/dontassemble"),
+            finalExecutablePath = Directory.GetCurrentDirectory(),
+            objPath = objPath,
         };
-        string asm = generator.GenerateProgram();
 
-        File.WriteAllText("out.asm", asm);
-
-        if (args.Contains("/dontassemble"))
+        try
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("\"/noasmcompile\" flag is set. Will not compile.");
-
-            if (args.Contains("/nocleanup"))
-            {
-                Console.WriteLine("\"/nocleanup\" flag is set. This is redundant.");
-            }
-
-            return 0;
+            compiler.Compile(compilerArgs);
         }
-
-        Console.WriteLine("Assembling...");
-        Compile();
+        catch (AssemblationException)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Assembling failed. This is a fault of the compiler, not a user error.");
+            Console.WriteLine("If you don't have \"nasm\" installed on your system, please install it.");
+            Environment.Exit(1);
+        }
+        catch (LinkingException)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Linking failed. This is a fault of the compiler, not a user error.");
+            Console.WriteLine("If you don't have \"ld\" installed on your system, please install it.");
+            Environment.Exit(1);
+        }
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine($"Compilation finished. Took {(DateTime.Now - startTime).TotalMilliseconds} ms.");
-
-#if RELEASE
-        if (!args.Contains("/nocleanup"))
-            Cleanup();
-#endif
 
         Console.WriteLine();
         int exitCode = RunCommand("./out");
@@ -111,58 +89,6 @@ internal class Program
         }
 
         return 0;
-    }
-
-    private static void Compile()
-    {
-        if (RunCommand("nasm -f elf64 out.asm") != 0)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Assembling failed. This is a fault of the compiler, not a user error.");
-            Console.WriteLine("If you don't have \"nasm\" installed on your system, please install it.");
-            Environment.Exit(1);
-        }
-
-        if (RunCommand("ld -o out out.o") != 0)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Linking failed. This is a fault of the compiler, not a user error.");
-            Console.WriteLine("If you don't have \"ld\" installed on your system, please install it.");
-            Environment.Exit(1);
-        }
-    }
-
-    private static void Cleanup()
-    {
-        try
-        {
-            File.Delete("out.asm");
-            File.Delete("out.o");
-        }
-        catch
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("File cleanup failed.");
-            Console.ForegroundColor = ConsoleColor.Gray;
-        }
-    }
-
-    private static void ExportTokens(List<Token> tokens)
-    {
-        if (File.Exists("tokens.txt"))
-            File.Delete("tokens.txt");
-
-        string output = string.Empty;
-
-        foreach (var token in tokens)
-        {
-            output += $"{token.Type} {token.Value}\n";
-
-            if (token.Type == TokenType.Semicolon)
-                output += "\n";
-        }
-
-        File.WriteAllText("tokens.txt", output);
     }
 
     private static int RunCommand(string command)
