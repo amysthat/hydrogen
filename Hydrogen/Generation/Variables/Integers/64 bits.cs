@@ -10,7 +10,7 @@ public class SignedInteger64 : IntegerType
     public override string AsmBRegister => "rbx";
     public override string AsmPointerSize => "qword";
 
-    public override void IntegerCast(Generator generator, IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType, int lineNumber)
     {
         if (integerType is Byte)
         {
@@ -43,7 +43,7 @@ public class UnsignedInteger64 : IntegerType
     public override string AsmBRegister => "rbx";
     public override string AsmPointerSize => "qword";
 
-    public override void IntegerCast(Generator generator, IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType, int lineNumber)
     {
         if (integerType is Byte)
         {

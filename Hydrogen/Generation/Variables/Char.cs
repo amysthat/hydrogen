@@ -10,13 +10,13 @@ public class Char : IntegerType // TODO: Probably shouldn't be an integer type, 
     public override string AsmBRegister => "bl";
     public override string AsmPointerSize => "byte";
 
-    public override void IntegerCast(Generator generator, IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType, int lineNumber)
     {
         if (integerType is Byte)
         {
             return; // Successful cast
         }
 
-        throw new CompilationException($"Can not cast char to {integerType}.");
+        throw new CompilationException(lineNumber, $"Can not cast char to {integerType}.");
     }
 }

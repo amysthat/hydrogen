@@ -14,13 +14,13 @@ public sealed class Pointer : IntegerType
 
     public required VariableType RepresentingType { get; set; }
 
-    public override void IntegerCast(Generator generator, IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType, int lineNumber)
     {
         if (integerType is UnsignedInteger64)
         {
             return; // Proper cast
         }
 
-        throw new CompilationException($"Can not cast pointer to anything other than u64. Tried to cast to {integerType.Keyword}.");
+        throw new CompilationException(lineNumber, $"Can not cast pointer to anything other than u64. Tried to cast to {integerType.Keyword}.");
     }
 }

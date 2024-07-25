@@ -8,6 +8,7 @@ public class Generator(NodeProgram program)
     public NodeProgram program = program;
     public string output = string.Empty;
     public int labelCount;
+    public int finalIfLabelCount;
     public Scope workingScope = null!;
     public bool performPushPullOptimization;
 

@@ -14,12 +14,12 @@ public static class Expressions
 
         if (leftExprType is not IntegerType || rightExprType is not IntegerType)
         {
-            throw new CompilationException("Expected integer types for binary expression.");
+            throw new CompilationException(binaryExpression.LineNumber, "Expected integer types for binary expression.");
         }
 
         if (leftExprType != rightExprType)
         {
-            throw new CompilationException($"Expression type mismatch on binary expression. {leftExprType} != {rightExprType}");
+            throw new CompilationException(binaryExpression.LineNumber, $"Expression type mismatch on binary expression. {leftExprType} != {rightExprType}");
         }
 
         var aRegister = (leftExprType as IntegerType)!.AsmARegister;
@@ -58,7 +58,7 @@ public static class Expressions
             return targetType!;
         }
 
-        Variable.Cast(generator, expressionType, targetType);
+        Variable.Cast(generator, expressionType, targetType, castExpression.LineNumber);
         return targetType!;
     }
 }

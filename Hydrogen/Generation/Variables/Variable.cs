@@ -24,7 +24,7 @@ public abstract class VariableType
     public abstract string Keyword { get; }
     public abstract long Size { get; }
 
-    public abstract bool Cast(Generator generator, VariableType targetType);
+    public abstract bool Cast(Generator generator, VariableType targetType, int lineNumber);
 
     public static bool operator ==(VariableType? x, VariableType? y) => x is not null && y is not null && x.Keyword == y.Keyword;
     public static bool operator !=(VariableType? x, VariableType? y) => x is not null && y is not null && x.Keyword != y.Keyword;
@@ -51,16 +51,16 @@ public abstract class IntegerType : VariableType
     public abstract string AsmBRegister { get; }
     public abstract string AsmPointerSize { get; }
 
-    public override bool Cast(Generator generator, VariableType targetType)
+    public override bool Cast(Generator generator, VariableType targetType, int lineNumber)
     {
         if (targetType is not IntegerType integerType)
             return false;
 
-        IntegerCast(generator, integerType);
+        IntegerCast(generator, integerType, lineNumber);
         return true;
     }
 
-    public abstract void IntegerCast(Generator generator, IntegerType integerType);
+    public abstract void IntegerCast(Generator generator, IntegerType integerType, int lineNumber);
 }
 
 public enum IntegerSignedness
@@ -86,13 +86,13 @@ public struct Variable
 
     public static long GetSize(VariableType variableType) => variableType.Size;
 
-    public static void Cast(Generator generator, VariableType variableType, VariableType targetType)
+    public static void Cast(Generator generator, VariableType variableType, VariableType targetType, int lineNumber)
     {
-        bool castSuccessful = variableType.Cast(generator, targetType);
+        bool castSuccessful = variableType.Cast(generator, targetType, lineNumber);
 
         if (!castSuccessful)
         {
-            throw new CompilationException($"Can not cast {variableType.Keyword} to {targetType.Keyword}.");
+            throw new CompilationException(lineNumber, $"Can not cast {variableType.Keyword} to {targetType.Keyword}.");
         }
     }
 

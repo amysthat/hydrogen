@@ -13,7 +13,7 @@ public static class Terms
 
         if (Variable.IsUnsignedInteger(integerType) && termInteger.Int_Lit.Value!.StartsWith('-'))
         {
-            throw new CompilationException("Negative value given for unsigned integer.");
+            throw new CompilationException(termInteger.LineNumber, "Negative value given for unsigned integer.");
         }
 
         generator.Push(Variable.MoveIntegerToRegister(generator, termInteger, integerType));
@@ -28,7 +28,7 @@ public static class Terms
 
         if (!variable.HasValue)
         {
-            throw new CompilationException($"Variable '{identifier}' has not been declared.");
+            throw new CompilationException(termIdentifier.LineNumber, $"Variable '{identifier}' has not been declared.");
         }
 
         if (variable.Value.Type is not IntegerType integerType)
@@ -56,7 +56,7 @@ public static class Terms
 
         if (!variable.HasValue)
         {
-            throw new CompilationException($"Variable '{identifier}' has not been declared.");
+            throw new CompilationException(termPointer.LineNumber, $"Variable '{identifier}' has not been declared.");
         }
 
         var variablePosition = generator.GetRelativeVariablePosition(identifier);
@@ -76,12 +76,12 @@ public static class Terms
 
         if (!variable.HasValue)
         {
-            throw new CompilationException($"Variable '{identifier}' has not been declared.");
+            throw new CompilationException(termValue.LineNumber, $"Variable '{identifier}' has not been declared.");
         }
 
         if (variable.Value.Type is not Pointer)
         {
-            throw new CompilationException($"Variable '{identifier}' is not a pointer.");
+            throw new CompilationException(termValue.LineNumber, $"Variable '{identifier}' is not a pointer.");
         }
 
         var pointerType = (variable.Value.Type as Pointer)!;

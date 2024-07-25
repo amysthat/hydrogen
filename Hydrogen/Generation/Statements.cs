@@ -12,7 +12,7 @@ public static class Statements
 
         if (exitExprType is not Byte)
         {
-            throw new CompilationException($"Invalid expression type on exit. Expected byte and got {exitExprType.Keyword}.");
+            throw new CompilationException(exitStatement.LineNumber, $"Invalid expression type on exit. Expected byte and got {exitExprType.Keyword}.");
         }
 
         generator.output += "    mov rax, 60 ; exit\n";
@@ -28,7 +28,7 @@ public static class Statements
 
         if (writeExprType is not String)
         {
-            throw new CompilationException($"Invalid expression type on exit. Expected {VariableTypes.String} and got {writeExprType}.");
+            throw new CompilationException(writeStatement.LineNumber, $"Invalid expression type on exit. Expected {VariableTypes.String} and got {writeExprType}.");
         }
 
         generator.Pop("rsi ; String pointer");
@@ -58,7 +58,7 @@ public static class Statements
 
         if (generator.DoesVariableExist(identifier))
         {
-            throw new CompilationException($"Variable '{identifier}' is already in use.");
+            throw new CompilationException(variableStatement.LineNumber, $"Variable '{identifier}' is already in use.");
         }
 
         var variableType = variableStatement.Type;
@@ -69,7 +69,7 @@ public static class Statements
 
         if (variableType != expressionType)
         {
-            throw new CompilationException($"Type mismatch on variable statement. {variableType.Keyword} != {expressionType.Keyword}");
+            throw new CompilationException(variableStatement.LineNumber, $"Type mismatch on variable statement. {variableType.Keyword} != {expressionType.Keyword}");
         }
 
         generator.workingScope.DefineVariable(identifier, variableType);
@@ -90,7 +90,7 @@ public static class Statements
 
         if (!variable.HasValue)
         {
-            throw new CompilationException($"Variable '{assignIdentifier}' has not been declared yet.");
+            throw new CompilationException(assignmentStatement.LineNumber, $"Variable '{assignIdentifier}' has not been declared yet.");
         }
 
         generator.output += $"    ; Assign {assignIdentifier}\n";
@@ -98,12 +98,12 @@ public static class Statements
 
         if (variable!.Value.Type != assignExprType)
         {
-            throw new CompilationException($"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type.Keyword}) != {assignExprType.Keyword}");
+            throw new CompilationException(assignmentStatement.LineNumber, $"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type.Keyword}) != {assignExprType.Keyword}");
         }
 
         if (assignExprType is not IntegerType assignIntegerType)
         {
-            throw new CompilationException($"Expected integer for variable assignment. {assignIdentifier} {assignExprType.Keyword}");
+            throw new CompilationException(assignmentStatement.LineNumber, $"Expected integer for variable assignment. {assignIdentifier} {assignExprType.Keyword}");
         }
 
         string assignARegister = assignIntegerType.AsmARegister;
@@ -116,7 +116,7 @@ public static class Statements
 
     public static void If(Generator generator, NodeStmtIf ifStatement) // TODO: Fix register usage later
     {
-        var finalLabelIndex = generator.labelCount + ifStatement.Elifs.Count + (ifStatement.Else.HasValue ? 1 : 0);
+        var finalIfLabel = $"finalIfLabel{generator.finalIfLabelCount++}";
 
         generator.GenerateExpression(ifStatement.This.Expression, VariableTypes.SignedInteger64);
         generator.output += "    xor rax, rax ; Clear out rax for if statement\n";
@@ -124,7 +124,7 @@ public static class Statements
         generator.output += $"    cmp rax, 0\n";
         generator.output += $"    je label{generator.labelCount}\n";
         generator.GenerateScope(ifStatement.This.Scope);
-        generator.output += $"    jmp label{finalLabelIndex}\n";
+        generator.output += $"    jmp {finalIfLabel}\n";
 
         for (int i = 0; i < ifStatement.Elifs.Count; i++)
         {
@@ -136,7 +136,7 @@ public static class Statements
             generator.output += $"    cmp rax, 0\n";
             generator.output += $"    je label{generator.labelCount}\n";
             generator.GenerateScope(elifStatement.Scope);
-            generator.output += $"    jmp label{finalLabelIndex}\n";
+            generator.output += $"    jmp {finalIfLabel}\n";
         }
 
         if (ifStatement.Else.HasValue)
@@ -145,9 +145,11 @@ public static class Statements
             generator.GenerateScope(ifStatement.Else.Value);
         }
 
-        generator.output += $"label{finalLabelIndex}:\n";
+        generator.output += $"{finalIfLabel}:\n";
 
-        generator.labelCount++; // account for final label
+        generator.output = generator.output.Replace(finalIfLabel, $"label{generator.labelCount++}");
+
+        generator.finalIfLabelCount--;
     }
 
     public static long GetSize(NodeStatement nodeStatement)

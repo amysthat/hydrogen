@@ -12,7 +12,7 @@ public class String : IntegerType
     public override string AsmBRegister => "rbx";
     public override string AsmPointerSize => "qword";
 
-    public override void IntegerCast(Generator generator, IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType, int lineNumber)
     {
         if (integerType is Pointer pointer)
         {
@@ -25,6 +25,6 @@ public class String : IntegerType
             return; // Proper cast
         }
 
-        throw new CompilationException($"Can not cast string to anything other than char* or u64. Tried to cast to {integerType.Keyword}.");
+        throw new CompilationException(lineNumber, $"Can not cast string to anything other than char* or u64. Tried to cast to {integerType.Keyword}.");
     }
 }

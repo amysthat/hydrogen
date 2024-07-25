@@ -10,7 +10,7 @@ public class SignedInteger32 : IntegerType
     public override string AsmBRegister => "ebx";
     public override string AsmPointerSize => "dword";
 
-    public override void IntegerCast(Generator generator, IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType, int lineNumber)
     {
         if (integerType.Size == 2)
         {
@@ -37,7 +37,7 @@ public class UnsignedInteger32 : IntegerType
     public override string AsmBRegister => "ebx";
     public override string AsmPointerSize => "dword";
 
-    public override void IntegerCast(Generator generator, IntegerType integerType)
+    public override void IntegerCast(Generator generator, IntegerType integerType, int lineNumber)
     {
         if (integerType.Size == 2)
         {
