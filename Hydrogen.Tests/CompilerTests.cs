@@ -54,9 +54,14 @@ public class CompilerTests : IClassFixture<TestResultFixture>
         {
             compiler.Compile(args);
         }
-        catch (Exception ex)
+        catch (CompilerException ex)
         {
             error = (title, "Compilation failed: " + ex);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            error = (title, "Compiler threw an exception: " + ex);
             return false;
         }
 

@@ -1,5 +1,5 @@
 namespace Hydrogen.Tokenization;
 
-public class TokenizationException(int line, string message) : CompilerDerivedException($"Tokenization Error: Line {line}: {message}")
+public class TokenizationException(int line, string message) : CompilerException($"Tokenization Error: Line {line}: {message}")
 {
 }

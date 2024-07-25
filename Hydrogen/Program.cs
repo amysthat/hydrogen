@@ -72,7 +72,7 @@ internal class Program
             Console.WriteLine("If you don't have \"ld\" installed on your system, please install it.");
             Environment.Exit(1);
         }
-        catch (CompilerDerivedException ex)
+        catch (CompilerException ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(ex.Message);
