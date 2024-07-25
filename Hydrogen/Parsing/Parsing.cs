@@ -52,14 +52,13 @@ public partial class Parser(List<Token> tokens)
 
             return new NodeTermPointerValue { Identifier = new NodeTermIdentifier { Identifier = identifier!.Value } };
         }
-        else if (TryConsume(TokenType.OpenParenthesis, out _))
+        else if (TryConsume(TokenType.OpenParenthesis, out var openParen))
         {
             var expression = ParseExpression();
 
             if (expression == null)
             {
-                Console.Error.WriteLine("Expected expression after parenthesis '('.");
-                Environment.Exit(1);
+                throw new ParsingException(openParen!.Value.LineNumber, "Expected expression after parenthesis '('.");
             }
 
             if (TryPeek(TokenType.CloseParenthesis, errToken => throw new ParsingException(errToken.LineNumber, "Expected ')' after parenthesis for expression.")))
@@ -131,8 +130,7 @@ public partial class Parser(List<Token> tokens)
 
             if (rhsExpr is null)
             {
-                Console.Error.WriteLine("Unable to parse right hand side expression.");
-                Environment.Exit(1);
+                throw new ParsingException(currentToken!.Value.LineNumber, "Unable to parse right hand side expression.");
             }
 
             var binExpr = new NodeBinExpr

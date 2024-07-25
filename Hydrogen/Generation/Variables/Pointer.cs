@@ -21,8 +21,6 @@ public sealed class Pointer : IntegerType
             return; // Proper cast
         }
 
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.Error.WriteLine($"Can not cast pointer to anything other than u64. Tried to cast to {integerType.Keyword}.");
-        Environment.Exit(1);
+        throw new CompilationException($"Can not cast pointer to anything other than u64. Tried to cast to {integerType.Keyword}.");
     }
 }

@@ -25,8 +25,6 @@ public class String : IntegerType
             return; // Proper cast
         }
 
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.Error.WriteLine($"Can not cast string to anything other than char* or u64. Tried to cast to {integerType.Keyword}.");
-        Environment.Exit(1);
+        throw new CompilationException($"Can not cast string to anything other than char* or u64. Tried to cast to {integerType.Keyword}.");
     }
 }

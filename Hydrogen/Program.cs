@@ -63,20 +63,20 @@ internal class Program
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Assembling failed. This is a fault of the compiler, not a user error.");
             Console.WriteLine("If you don't have \"nasm\" installed on your system, please install it.");
-            Environment.Exit(1);
+            return 1;
         }
         catch (LinkingException)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Linking failed. This is a fault of the compiler, not a user error.");
             Console.WriteLine("If you don't have \"ld\" installed on your system, please install it.");
-            Environment.Exit(1);
+            return 1;
         }
         catch (CompilerException ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(ex.Message);
-            Environment.Exit(1);
+            return 1;
         }
 
         Console.ForegroundColor = ConsoleColor.DarkGray;

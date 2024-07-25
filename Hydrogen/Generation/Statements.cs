@@ -12,8 +12,7 @@ public static class Statements
 
         if (exitExprType is not Byte)
         {
-            Console.Error.WriteLine($"Invalid expression type on exit. Expected byte and got {exitExprType.Keyword}.");
-            Environment.Exit(1);
+            throw new CompilationException($"Invalid expression type on exit. Expected byte and got {exitExprType.Keyword}.");
         }
 
         generator.output += "    mov rax, 60 ; exit\n";
@@ -29,8 +28,7 @@ public static class Statements
 
         if (writeExprType is not String)
         {
-            Console.Error.WriteLine($"Invalid expression type on exit. Expected {VariableTypes.String} and got {writeExprType}.");
-            Environment.Exit(1);
+            throw new CompilationException($"Invalid expression type on exit. Expected {VariableTypes.String} and got {writeExprType}.");
         }
 
         generator.Pop("rsi ; String pointer");
@@ -60,8 +58,7 @@ public static class Statements
 
         if (generator.DoesVariableExist(identifier))
         {
-            Console.Error.WriteLine($"Variable '{identifier}' is already in use.");
-            Environment.Exit(1);
+            throw new CompilationException($"Variable '{identifier}' is already in use.");
         }
 
         var variableType = variableStatement.Type;
@@ -72,8 +69,7 @@ public static class Statements
 
         if (variableType != expressionType)
         {
-            Console.Error.WriteLine($"Type mismatch on variable statement. {variableType.Keyword} != {expressionType.Keyword}");
-            Environment.Exit(1);
+            throw new CompilationException($"Type mismatch on variable statement. {variableType.Keyword} != {expressionType.Keyword}");
         }
 
         generator.workingScope.DefineVariable(identifier, variableType);
@@ -94,8 +90,7 @@ public static class Statements
 
         if (!variable.HasValue)
         {
-            Console.Error.WriteLine($"Variable '{assignIdentifier}' has not been declared yet.");
-            Environment.Exit(1);
+            throw new CompilationException($"Variable '{assignIdentifier}' has not been declared yet.");
         }
 
         generator.output += $"    ; Assign {assignIdentifier}\n";
@@ -103,15 +98,12 @@ public static class Statements
 
         if (variable!.Value.Type != assignExprType)
         {
-            Console.Error.WriteLine($"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type.Keyword}) != {assignExprType.Keyword}");
-            Environment.Exit(1);
+            throw new CompilationException($"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type.Keyword}) != {assignExprType.Keyword}");
         }
 
         if (assignExprType is not IntegerType assignIntegerType)
         {
-            Console.Error.WriteLine($"Expected integer for variable assignment. {assignIdentifier} {assignExprType.Keyword}");
-            Environment.Exit(1);
-            throw new Exception(); // To make C# be compliant on the use of assignIntegerType
+            throw new CompilationException($"Expected integer for variable assignment. {assignIdentifier} {assignExprType.Keyword}");
         }
 
         string assignARegister = assignIntegerType.AsmARegister;

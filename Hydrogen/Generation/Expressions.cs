@@ -14,14 +14,12 @@ public static class Expressions
 
         if (leftExprType is not IntegerType || rightExprType is not IntegerType)
         {
-            Console.Error.WriteLine("Expected integer types for binary expression.");
-            Environment.Exit(1);
+            throw new CompilationException("Expected integer types for binary expression.");
         }
 
         if (leftExprType != rightExprType)
         {
-            Console.Error.WriteLine($"Expression type mismatch on binary expression. {leftExprType} != {rightExprType}");
-            Environment.Exit(1);
+            throw new CompilationException($"Expression type mismatch on binary expression. {leftExprType} != {rightExprType}");
         }
 
         var aRegister = (leftExprType as IntegerType)!.AsmARegister;

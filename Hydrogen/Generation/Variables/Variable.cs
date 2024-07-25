@@ -92,8 +92,7 @@ public struct Variable
 
         if (!castSuccessful)
         {
-            Console.Error.WriteLine($"Can not cast {variableType.Keyword} to {targetType.Keyword}.");
-            Environment.Exit(1);
+            throw new CompilationException($"Can not cast {variableType.Keyword} to {targetType.Keyword}.");
         }
     }
 

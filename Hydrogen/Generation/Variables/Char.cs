@@ -17,8 +17,6 @@ public class Char : IntegerType // TODO: Probably shouldn't be an integer type, 
             return; // Successful cast
         }
 
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.Error.WriteLine($"Can not cast char to {integerType}.");
-        Environment.Exit(1);
+        throw new CompilationException($"Can not cast char to {integerType}.");
     }
 }
