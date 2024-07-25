@@ -62,11 +62,7 @@ public class Tokenizer(string source)
                 var endChar = Consume();
 
                 if (!endChar.HasValue || endChar.Value != '\'')
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Error.WriteLine($"Tokenization Error: Only 1 character allowed for char on line {lineCount}.");
-                    Environment.Exit(1);
-                }
+                    throw new TokenizationException(lineCount, "More than 1 character attempted to use for char.");
 
                 tokens.Add(new Token { Type = TokenType.Char, Value = buf, LineNumber = lineCount });
                 buf = string.Empty;
@@ -80,18 +76,10 @@ public class Tokenizer(string source)
                 while (true)
                 {
                     if (Peek().HasValue && Peek()!.Value == '\n')
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.WriteLine($"Tokenization Error: Multiple lined string found on line {lineCount}.\nPlease keep the string in a single line.\nUse '\\n' if you want to store multiple lines");
-                        Environment.Exit(1);
-                    }
+                        throw new TokenizationException(lineCount, "Multiple lined string encountered.\nPlease keep the string in a single line.\nUse '\\n' if you want to store multiple lines");
 
                     if (!Peek().HasValue || !Peek(1).HasValue)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.Error.WriteLine($"Tokenization Error: Reached end of string prematurely on line {lineCount}.");
-                        Environment.Exit(1);
-                    }
+                        throw new TokenizationException(lineCount, "Reached end of string prematurely.");
 
                     var value = Consume()!.Value;
 

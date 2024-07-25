@@ -72,6 +72,12 @@ internal class Program
             Console.WriteLine("If you don't have \"ld\" installed on your system, please install it.");
             Environment.Exit(1);
         }
+        catch (CompilerDerivedException ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(ex.Message);
+            Environment.Exit(1);
+        }
 
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine($"Compilation finished. Took {(DateTime.Now - startTime).TotalMilliseconds} ms.");

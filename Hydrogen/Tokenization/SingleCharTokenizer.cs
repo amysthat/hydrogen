@@ -16,13 +16,7 @@ internal static class SingleCharTokenizer
         else if (c == '/') return Token(TokenType.Slash);
         else if (c == ';') return Token(TokenType.Semicolon);
         else if (c == '&') return Token(TokenType.VarToPtr);
-        else
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Error.WriteLine($"Tokenization Error: Unknown standalone character: '{c}' on line {lineCount}.");
-            Environment.Exit(1);
-            return new Token(); // Unreachable code
-        }
+        else throw new TokenizationException(lineCount, $"Unknown standalone character: '{c}'");
 
         Token Token(TokenType type) => new() { Type = type, LineNumber = lineCount };
     }

@@ -43,6 +43,7 @@ public class Compiler(string compilationFile, bool printStage = false)
         string asm = generator.GenerateProgram();
         File.WriteAllText(Path.Combine(args.objPath, "out.asm"), asm);
 
+
         if (args.dontAssemble)
         {
             Print("\"Don't Assemble\" flag is set. Exiting...");
