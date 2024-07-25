@@ -1,7 +1,14 @@
 namespace Hydrogen.Tests;
 
-public class CompilerTests
+public class CompilerTests : IClassFixture<TestResultFixture>
 {
+    private readonly TestResultFixture _fixture;
+
+    public CompilerTests(TestResultFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
     private static string AssemblyDirectory =>
         Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly()!.Location)!;
     private static string TestDirectory =>
@@ -18,10 +25,15 @@ public class CompilerTests
     [MemberData(nameof(ConfigFiles))]
     public void TestFile(string file)
     {
-        CompileFile(file);
+        if (CompileFile(file, out var error))
+            _fixture.AddSuccess();
+        else
+            _fixture.AddFailed(error!.Value.title, file, error!.Value.error);
+
+        Directory.Delete(GenerationDirectory, true);
     }
 
-    private static void CompileFile(string file)
+    private static bool CompileFile(string file, out (string title, string error)? error)
     {
         if (Directory.Exists(GenerationDirectory))
             Directory.Delete(GenerationDirectory, true);
@@ -44,22 +56,26 @@ public class CompilerTests
         }
         catch (Exception ex)
         {
-            Assert.Fail($"{title} ({Path.GetFileName(file)}) failed compilation: {ex.Message}");
+            error = (title, "Compilation failed: " + ex);
+            return false;
         }
 
         int returnCode = CommandLineUtility.RunCommand(Path.Combine(GenerationDirectory, "out"));
 
         if (returnCode == 139)
         {
-            Assert.Fail($"{title} ({Path.GetFileName(file)}) segfaulted.");
+            error = (title, "Segfault.");
+            return false;
         }
 
         if (returnCode != expectedReturnCode)
         {
-            Assert.Fail($"{title} ({Path.GetFileName(file)}) did not meet the return code requirements. {expectedReturnCode} (expected) != {returnCode} (received)");
+            error = (title, $"Exit code mismatch: {expectedReturnCode} (expected) != {returnCode} (received)");
+            return false;
         }
 
-        Directory.Delete(GenerationDirectory, true);
+        error = null;
+        return true;
     }
 
     private static void GetFileInformation(string file, out string fileTitle, out int expectedReturnCode)
