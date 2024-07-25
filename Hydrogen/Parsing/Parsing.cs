@@ -40,7 +40,7 @@ public partial class Parser(List<Token> tokens)
             return new NodeTermIdentifier { Identifier = identToken!.Value };
         else if (TryConsume(TokenType.VarToPtr, out _))
         {
-            TryPeek(TokenType.Identifier, identToken => ErrorExpected("identifier after pointer", identToken.LineNumber));
+            TryPeek(TokenType.Identifier, identToken => throw new ParsingException(identToken.LineNumber, "Identifier after pointer expected."));
             identToken = Consume();
 
             return new NodeTermPointerAddress { Identifier = new NodeTermIdentifier { Identifier = identToken!.Value } };
@@ -62,7 +62,7 @@ public partial class Parser(List<Token> tokens)
                 Environment.Exit(1);
             }
 
-            if (TryPeek(TokenType.CloseParenthesis, errToken => ErrorExpected("')' after parenthesis for expression", errToken.LineNumber)))
+            if (TryPeek(TokenType.CloseParenthesis, errToken => throw new ParsingException(errToken.LineNumber, "Expected ')' after parenthesis for expression.")))
                 Consume();
 
             return new NodeTermParen { Expression = expression };
@@ -95,14 +95,14 @@ public partial class Parser(List<Token> tokens)
 
             if (varType == null)
             {
-                ErrorInvalid("variable type before 'cast'", castToken.LineNumber);
+                throw new ParsingException(castToken.LineNumber, "Invalid variable type before 'cast'.");
             }
 
             var expression = ParseExpression();
 
             if (expression == null)
             {
-                ErrorInvalid("expression after 'cast'", castToken.LineNumber);
+                throw new ParsingException(castToken.LineNumber, "Invalid expression after 'cast'.");
             }
 
             return new NodeExprCast { CastType = varType!, Expression = expression! };
@@ -219,18 +219,17 @@ public partial class Parser(List<Token> tokens)
 
         while (true)
         {
+            if (TryConsume(TokenType.CloseCurlyBraces, out _))
+                break;
+
             var statement = ParseStatement()!;
 
             if (statement is null)
             {
-                Console.Error.WriteLine("Parse Error: Failure parsing statement in scope.");
-                Environment.Exit(1);
+                throw new ParsingException(Peek()!.Value.LineNumber, "Failure parsing statement in scope.");
             }
 
             scope.Statements.Add(statement);
-
-            if (TryConsume(TokenType.CloseCurlyBraces, out _))
-                break;
         }
 
         return scope;
@@ -249,7 +248,7 @@ public partial class Parser(List<Token> tokens)
             }
             else
             {
-                ErrorInvalid("statement", Peek()!.Value.LineNumber);
+                throw new ParsingException(Peek()!.Value.LineNumber, "Unknown/invalid statement.");
             }
         }
 
@@ -265,7 +264,7 @@ public partial class Parser(List<Token> tokens)
 
         if (token.Type != TokenType.VariableType)
         {
-            ErrorExpected("variable type", token.LineNumber);
+            throw new ParsingException(token.LineNumber, "Invalid token type for variable type: " + token.Type);
         }
 
         string variableTypeStr = token.Value!;
@@ -281,20 +280,6 @@ public partial class Parser(List<Token> tokens)
         }
 
         return variableType;
-    }
-
-    public void ErrorExpected(string message, int line)
-    {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.Error.WriteLine($"Parse Error: Expected {message} on line {line}.");
-        Environment.Exit(1);
-    }
-
-    public void ErrorInvalid(string message, int line)
-    {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.Error.WriteLine($"Parse Error: Invalid {message} on line {line}.");
-        Environment.Exit(1);
     }
 
     #region Consume & Peek
@@ -320,8 +305,7 @@ public partial class Parser(List<Token> tokens)
 
         if (token == null)
         {
-            Console.Error.WriteLine("Parse Error: Unknown error at the end of the file.");
-            Environment.Exit(1);
+            throw new ParsingException(-1, "Reached end of file prematurely.");
         }
 
         if (token.Value.Type != type)

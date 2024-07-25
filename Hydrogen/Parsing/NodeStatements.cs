@@ -65,13 +65,12 @@ internal static class NodeStatements
 
         if (nodeExpr == null)
         {
-            parser.ErrorInvalid("expression after 'exit'", exitToken.LineNumber);
-            return new NodeStmtExit(); // Unreachable
+            throw new ParsingException(exitToken.LineNumber, "Invalid expression after 'exit'.");
         }
 
         var exitStatement = new NodeStmtExit { ReturnCodeExpression = nodeExpr };
 
-        if (parser.TryPeek(TokenType.Semicolon, token => parser.ErrorExpected("';' after 'exit'", token.LineNumber)))
+        if (parser.TryPeek(TokenType.Semicolon, token => throw new ParsingException(exitToken.LineNumber, "';' expected after 'exit'.")))
         {
             parser.Consume(); // ";"
         }
@@ -87,13 +86,12 @@ internal static class NodeStatements
 
         if (nodeExpr == null)
         {
-            parser.ErrorInvalid("expression after 'write'", writeToken.LineNumber);
-            return new NodeStmtWrite(); // Unreachable
+            throw new ParsingException(writeToken.LineNumber, "Invalid expression after 'write'.");
         }
 
         var writeStatement = new NodeStmtWrite { String = nodeExpr };
 
-        if (parser.TryPeek(TokenType.Semicolon, token => parser.ErrorExpected("';' after 'write'", token.LineNumber)))
+        if (parser.TryPeek(TokenType.Semicolon, token => throw new ParsingException(writeToken.LineNumber, "Expected ';' after 'write'.")))
         {
             parser.Consume(); // ";"
         }
@@ -110,10 +108,10 @@ internal static class NodeStatements
 
         if (variableType == null)
         {
-            parser.ErrorInvalid("variable type after variable hint", identifierToken.LineNumber);
+            throw new ParsingException(identifierToken.LineNumber, "Invalid variable type after variable hint.");
         }
 
-        parser.TryPeek(TokenType.Equals, token => parser.ErrorExpected("'=' expected after variable type", token.LineNumber));
+        parser.TryPeek(TokenType.Equals, token => throw new ParsingException(token.LineNumber, "Expected '=' after variable type."));
 
         parser.Consume(); // "="
 
@@ -121,12 +119,12 @@ internal static class NodeStatements
 
         if (expression == null)
         {
-            parser.ErrorExpected("expression after '=' of variable statement", identifierToken.LineNumber);
+            throw new ParsingException(identifierToken.LineNumber, "Expected expression after '=' of variable statement.");
         }
 
         var statement = new NodeStmtVariable { Identifier = identifierToken, Type = variableType!, ValueExpression = expression! };
 
-        if (parser.TryPeek(TokenType.Semicolon, _ => parser.ErrorExpected("';' after variable statement", identifierToken.LineNumber)))
+        if (parser.TryPeek(TokenType.Semicolon, _ => throw new ParsingException(identifierToken.LineNumber, "Expected ';' after variable statement.")))
         {
             parser.Consume(); // ";"
         }
@@ -145,12 +143,12 @@ internal static class NodeStatements
 
         if (expression == null)
         {
-            parser.ErrorExpected("expression after '=' of variable assignment", identifierToken.LineNumber);
+            throw new ParsingException(identifierToken.LineNumber, "Expected expression after '=' of variable assignment.");
         }
 
         var statement = new NodeStmtAssign { Identifier = identifierToken, ValueExpression = expression! };
 
-        if (parser.TryPeek(TokenType.Semicolon, token => parser.ErrorExpected("';' after variable statement", token.LineNumber)))
+        if (parser.TryPeek(TokenType.Semicolon, token => throw new ParsingException(token.LineNumber, "Expected ';' after variable statement.")))
         {
             parser.Consume(); // ";"
         }
@@ -171,14 +169,14 @@ internal static class NodeStatements
 
         if (expression == null)
         {
-            parser.ErrorInvalid("expression after 'if'", ifToken.LineNumber);
+            throw new ParsingException(ifToken.LineNumber, "Invalid expression after 'if'.");
         }
 
         var scope = parser.ParseScope();
 
         if (!scope.HasValue)
         {
-            parser.ErrorInvalid("scope after 'if'", ifToken.LineNumber);
+            throw new ParsingException(ifToken.LineNumber, "Invalid scope encountered after 'if'.");
         }
 
         nodeStmtIf.This.Expression = expression!;
@@ -192,14 +190,14 @@ internal static class NodeStatements
 
             if (elifExpression == null)
             {
-                parser.ErrorInvalid("expression after 'elif'", token!.Value.LineNumber);
+                throw new ParsingException(token!.Value.LineNumber, "Invalid expression encountered after 'elif'.");
             }
 
             var elifScope = parser.ParseScope();
 
             if (!elifScope.HasValue)
             {
-                parser.ErrorInvalid("scope after 'elif'", token!.Value.LineNumber);
+                throw new ParsingException(token!.Value.LineNumber, "Invalid scope encountered after 'elif'");
             }
 
             elifStmt.Expression = elifExpression!;
@@ -210,7 +208,7 @@ internal static class NodeStatements
 
         if (parser.TryConsume(TokenType.Else, out _))
         {
-            parser.TryPeek(TokenType.OpenCurlyBraces, token => parser.ErrorExpected("'{' after 'else'", token.LineNumber));
+            parser.TryPeek(TokenType.OpenCurlyBraces, token => throw new ParsingException(token.LineNumber, "'{' missing after 'else'."));
 
             var elseScope = parser.ParseScope();
 
