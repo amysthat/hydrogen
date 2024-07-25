@@ -12,6 +12,9 @@
     <Using Include="Hydrogen.Generation.Variables.Integers.Byte">
       <Alias>Byte</Alias>
     </Using>
+    <Using Include="Hydrogen.Generation.Variables.Pointer">
+      <Alias>Pointer</Alias>
+    </Using>
   </ItemGroup>
 
 </Project>

@@ -4,10 +4,12 @@ namespace Hydrogen.Parsing;
 
 public struct NodeExprCast : NodeExpression
 {
+    public int LineNumber { get; set; }
+
     public VariableType CastType;
     public NodeExpression Expression;
 }
-public interface NodeExpression
+public interface NodeExpression : Node
 {
 }
 
@@ -20,6 +22,8 @@ public enum NodeBinExprType
 }
 public struct NodeBinExpr : NodeExpression
 {
+    public int LineNumber { get; set; }
+
     public NodeBinExprType Type;
 
     public NodeExpression Left;

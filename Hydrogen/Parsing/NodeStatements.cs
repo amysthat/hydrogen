@@ -5,34 +5,46 @@ namespace Hydrogen.Parsing;
 
 public struct NodeStmtExit : NodeStatement
 {
+    public int LineNumber { get; set; }
+
     public NodeExpression ReturnCodeExpression;
 }
 public struct NodeStmtWrite : NodeStatement
 {
+    public int LineNumber { get; set; }
+
     public NodeExpression String;
 }
 public struct NodeStmtVariable : NodeStatement
 {
+    public int LineNumber { get; set; }
+
     public Token Identifier;
     public VariableType Type;
     public NodeExpression ValueExpression;
 }
 public struct NodeStmtAssign : NodeStatement
 {
+    public int LineNumber { get; set; }
+
     public Token Identifier;
     public NodeExpression ValueExpression;
 }
-public interface NodeStatement
+public interface NodeStatement : Node
 {
 }
 public struct NodeStmtIf : NodeStatement
 {
+    public int LineNumber { get; set; }
+
     public NodeStmtIfSingle This;
     public List<NodeStmtIfSingle> Elifs;
     public NodeScope? Else;
 }
 public struct NodeStmtIfSingle
 {
+    public int LineNumber { get; set; }
+
     public NodeExpression Expression;
     public NodeScope Scope;
 }
@@ -47,9 +59,11 @@ internal static class NodeStatements
         {
             return new NodeStmtExit
             {
+                LineNumber = exitToken.LineNumber,
                 ReturnCodeExpression =
                 new NodeTermInteger
                 {
+                    LineNumber = exitToken.LineNumber,
                     Int_Lit =
                     new Token
                     {
@@ -68,7 +82,7 @@ internal static class NodeStatements
             throw new ParsingException(exitToken.LineNumber, "Invalid expression after 'exit'.");
         }
 
-        var exitStatement = new NodeStmtExit { ReturnCodeExpression = nodeExpr };
+        var exitStatement = new NodeStmtExit { LineNumber = exitToken.LineNumber, ReturnCodeExpression = nodeExpr };
 
         if (parser.TryPeek(TokenType.Semicolon, token => throw new ParsingException(exitToken.LineNumber, "';' expected after 'exit'.")))
         {
@@ -89,7 +103,7 @@ internal static class NodeStatements
             throw new ParsingException(writeToken.LineNumber, "Invalid expression after 'write'.");
         }
 
-        var writeStatement = new NodeStmtWrite { String = nodeExpr };
+        var writeStatement = new NodeStmtWrite { LineNumber = writeToken.LineNumber, String = nodeExpr };
 
         if (parser.TryPeek(TokenType.Semicolon, token => throw new ParsingException(writeToken.LineNumber, "Expected ';' after 'write'.")))
         {
@@ -122,7 +136,7 @@ internal static class NodeStatements
             throw new ParsingException(identifierToken.LineNumber, "Expected expression after '=' of variable statement.");
         }
 
-        var statement = new NodeStmtVariable { Identifier = identifierToken, Type = variableType!, ValueExpression = expression! };
+        var statement = new NodeStmtVariable { LineNumber = identifierToken.LineNumber, Identifier = identifierToken, Type = variableType!, ValueExpression = expression! };
 
         if (parser.TryPeek(TokenType.Semicolon, _ => throw new ParsingException(identifierToken.LineNumber, "Expected ';' after variable statement.")))
         {
@@ -146,7 +160,7 @@ internal static class NodeStatements
             throw new ParsingException(identifierToken.LineNumber, "Expected expression after '=' of variable assignment.");
         }
 
-        var statement = new NodeStmtAssign { Identifier = identifierToken, ValueExpression = expression! };
+        var statement = new NodeStmtAssign { LineNumber = identifierToken.LineNumber, Identifier = identifierToken, ValueExpression = expression! };
 
         if (parser.TryPeek(TokenType.Semicolon, token => throw new ParsingException(token.LineNumber, "Expected ';' after variable statement.")))
         {
@@ -158,12 +172,13 @@ internal static class NodeStatements
 
     public static NodeStmtIf ParseIfStatement(Parser parser)
     {
+        var ifToken = parser.Consume()!.Value;
+
         var nodeStmtIf = new NodeStmtIf
         {
+            LineNumber = ifToken.LineNumber,
             Elifs = [],
         };
-
-        var ifToken = parser.Consume()!.Value;
 
         var expression = parser.ParseExpression();
 
@@ -184,7 +199,10 @@ internal static class NodeStatements
 
         while (parser.TryConsume(TokenType.Elif, out var token))
         {
-            var elifStmt = new NodeStmtIfSingle();
+            var elifStmt = new NodeStmtIfSingle
+            {
+                LineNumber = token!.Value.LineNumber,
+            };
 
             var elifExpression = parser.ParseExpression();
 

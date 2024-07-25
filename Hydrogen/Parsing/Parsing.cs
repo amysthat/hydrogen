@@ -1,14 +1,14 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
-using Hydrogen.Generation;
 using Hydrogen.Generation.Variables;
 using Hydrogen.Tokenization;
-using Pointer = Hydrogen.Generation.Variables.Pointer;
 
 namespace Hydrogen.Parsing;
 
 public struct NodeScope : NodeStatement
 {
+    public int LineNumber { get; set; }
+
     public List<NodeStatement> Statements;
 }
 
@@ -17,6 +17,11 @@ public struct NodeProgram
     public List<NodeStatement> Statements;
 
     public NodeProgram() => Statements = [];
+}
+
+public interface Node
+{
+    public int LineNumber { get; set; }
 }
 
 public partial class Parser(List<Token> tokens)
@@ -33,24 +38,25 @@ public partial class Parser(List<Token> tokens)
         {
             return new NodeTermInteger
             {
+                LineNumber = intLitToken!.Value.LineNumber,
                 Int_Lit = intLitToken!.Value,
             };
         }
         else if (TryConsume(TokenType.Identifier, out var identToken))
-            return new NodeTermIdentifier { Identifier = identToken!.Value };
+            return new NodeTermIdentifier { LineNumber = identToken!.Value.LineNumber, Identifier = identToken!.Value };
         else if (TryConsume(TokenType.VarToPtr, out _))
         {
             TryPeek(TokenType.Identifier, identToken => throw new ParsingException(identToken.LineNumber, "Identifier after pointer expected."));
             identToken = Consume();
 
-            return new NodeTermPointerAddress { Identifier = new NodeTermIdentifier { Identifier = identToken!.Value } };
+            return new NodeTermPointerAddress { LineNumber = identToken!.Value.LineNumber, Identifier = new NodeTermIdentifier { LineNumber = identToken!.Value.LineNumber, Identifier = identToken!.Value } };
         }
         else if (TryPeek(TokenType.Star) && TryPeek(TokenType.Identifier, 1))
         {
             Consume(); // *
             var identifier = Consume();
 
-            return new NodeTermPointerValue { Identifier = new NodeTermIdentifier { Identifier = identifier!.Value } };
+            return new NodeTermPointerValue { LineNumber = identifier!.Value.LineNumber, Identifier = new NodeTermIdentifier { LineNumber = identToken!.Value.LineNumber, Identifier = identifier!.Value } };
         }
         else if (TryConsume(TokenType.OpenParenthesis, out var openParen))
         {
@@ -64,15 +70,15 @@ public partial class Parser(List<Token> tokens)
             if (TryPeek(TokenType.CloseParenthesis, errToken => throw new ParsingException(errToken.LineNumber, "Expected ')' after parenthesis for expression.")))
                 Consume();
 
-            return new NodeTermParen { Expression = expression };
+            return new NodeTermParen { LineNumber = openParen!.Value.LineNumber, Expression = expression };
         }
         else if (TryConsume(TokenType.Char, out var charToken))
         {
-            return new NodeTermChar { Char = charToken!.Value };
+            return new NodeTermChar { LineNumber = charToken!.Value.LineNumber, Char = charToken!.Value };
         }
         else if (TryConsume(TokenType.String, out var stringToken))
         {
-            return new NodeTermString { String = stringToken!.Value };
+            return new NodeTermString { LineNumber = stringToken!.Value.LineNumber, String = stringToken!.Value };
         }
 
         return null;
@@ -104,7 +110,7 @@ public partial class Parser(List<Token> tokens)
                 throw new ParsingException(castToken.LineNumber, "Invalid expression after 'cast'.");
             }
 
-            return new NodeExprCast { CastType = varType!, Expression = expression! };
+            return new NodeExprCast { LineNumber = castToken.LineNumber, CastType = varType!, Expression = expression! };
         }
 
         if (ParseTerm() is not NodeExpression lhsExpr)
@@ -135,6 +141,7 @@ public partial class Parser(List<Token> tokens)
 
             var binExpr = new NodeBinExpr
             {
+                LineNumber = currentToken!.Value.LineNumber,
                 Left = lhsExpr,
                 Right = rhsExpr,
                 Type = opr.Type switch
@@ -207,11 +214,12 @@ public partial class Parser(List<Token> tokens)
 
     public NodeScope? ParseScope()
     {
-        if (!TryConsume(TokenType.OpenCurlyBraces, out _))
+        if (!TryConsume(TokenType.OpenCurlyBraces, out var openCurlyBraces))
             return null;
 
         var scope = new NodeScope
         {
+            LineNumber = openCurlyBraces!.Value.LineNumber,
             Statements = [],
         };
 
