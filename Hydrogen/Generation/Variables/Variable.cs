@@ -3,72 +3,6 @@ using Hydrogen.Parsing;
 
 namespace Hydrogen.Generation.Variables;
 
-public static class VariableTypes
-{
-    // Integers
-    public static SignedInteger64 SignedInteger64 => new();
-    public static UnsignedInteger64 UnsignedInteger64 => new();
-    public static SignedInteger32 SignedInteger32 => new();
-    public static UnsignedInteger32 UnsignedInteger32 => new();
-    public static SignedInteger16 SignedInteger16 => new();
-    public static UnsignedInteger16 UnsignedInteger16 => new();
-    public static Byte Byte => new();
-
-    // Other
-    public static Char Char => new();
-    public static String String => new();
-}
-
-public abstract class VariableType
-{
-    public abstract string Keyword { get; }
-    public abstract long Size { get; }
-
-    public abstract bool Cast(Generator generator, VariableType targetType, int lineNumber);
-
-    public static bool operator ==(VariableType? x, VariableType? y) => x is not null && y is not null && x.Keyword == y.Keyword;
-    public static bool operator !=(VariableType? x, VariableType? y) => x is not null && y is not null && x.Keyword != y.Keyword;
-
-    public override bool Equals(object? obj)
-    {
-        if (obj is not VariableType variableType)
-        {
-            return false;
-        }
-
-        return variableType.Keyword == Keyword;
-    }
-
-    public override int GetHashCode() => Keyword.GetHashCode();
-
-    public override string ToString() => Keyword;
-}
-
-public abstract class IntegerType : VariableType
-{
-    public abstract IntegerSignedness Signedness { get; }
-    public abstract string AsmARegister { get; }
-    public abstract string AsmBRegister { get; }
-    public abstract string AsmPointerSize { get; }
-
-    public override bool Cast(Generator generator, VariableType targetType, int lineNumber)
-    {
-        if (targetType is not IntegerType integerType)
-            return false;
-
-        IntegerCast(generator, integerType, lineNumber);
-        return true;
-    }
-
-    public abstract void IntegerCast(Generator generator, IntegerType integerType, int lineNumber);
-}
-
-public enum IntegerSignedness
-{
-    SignedInteger,
-    UnsignedInteger,
-}
-
 public struct Variable
 {
     public required long RelativePosition;
@@ -79,7 +13,7 @@ public struct Variable
 
     public required Scope Owner;
 
-    public override string ToString() => Type.ToString() + " " + Name;
+    public readonly override string ToString() => Type.ToString() + " " + Name;
 
     public static bool IsSignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.SignedInteger;
     public static bool IsUnsignedInteger(IntegerType integerType) => integerType.Signedness == IntegerSignedness.UnsignedInteger;

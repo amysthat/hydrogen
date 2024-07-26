@@ -1,5 +1,6 @@
 using System.Text;
 using Hydrogen.Generation.Variables;
+using Hydrogen.Generation.Variables.Integers;
 using Hydrogen.Parsing;
 using Hydrogen.Tokenization;
 

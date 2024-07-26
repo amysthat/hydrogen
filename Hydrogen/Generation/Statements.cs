@@ -1,4 +1,5 @@
 using Hydrogen.Generation.Variables;
+using Hydrogen.Generation.Variables.Integers;
 using Hydrogen.Parsing;
 using String = Hydrogen.Generation.Variables.String;
 

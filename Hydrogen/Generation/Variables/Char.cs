@@ -1,3 +1,5 @@
+using Hydrogen.Generation.Variables.Integers;
+
 namespace Hydrogen.Generation.Variables;
 
 public class Char : IntegerType // TODO: Probably shouldn't be an integer type, but a lot of the generation code only works for this
