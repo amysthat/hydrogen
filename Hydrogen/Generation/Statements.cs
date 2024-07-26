@@ -85,6 +85,7 @@ public static class Statements
     public static void VariableAssignment(Generator generator, NodeStmtAssign assignmentStatement)
     {
         string assignIdentifier = assignmentStatement.Identifier.Value!;
+        var isPointerValueAssignment = assignmentStatement.IsPointerValue;
 
         var variable = generator.GetVariable(assignIdentifier);
 
@@ -96,9 +97,18 @@ public static class Statements
         generator.output += $"    ; Assign {assignIdentifier}\n";
         var assignExprType = generator.GenerateExpression(assignmentStatement.ValueExpression, variable!.Value.Type);
 
-        if (variable!.Value.Type != assignExprType)
+        if (isPointerValueAssignment)
         {
-            throw new CompilationException(assignmentStatement.LineNumber, $"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type.Keyword}) != {assignExprType.Keyword}");
+            if (variable!.Value.Type is not Pointer pointer)
+                throw new CompilationException(assignmentStatement.LineNumber, $"{assignIdentifier} is not a pointer.");
+
+            if (pointer.RepresentingType != assignExprType)
+                throw new CompilationException(assignmentStatement.LineNumber, $"Type mismatch on variable assignment. *{assignIdentifier} ({variable!.Value.Type.Keyword}) != {assignExprType.Keyword}");
+        }
+        else
+        {
+            if (variable!.Value.Type != assignExprType)
+                throw new CompilationException(assignmentStatement.LineNumber, $"Type mismatch on variable assignment. {assignIdentifier} ({variable!.Value.Type.Keyword}) != {assignExprType.Keyword}");
         }
 
         if (assignExprType is not IntegerType assignIntegerType)
@@ -110,8 +120,17 @@ public static class Statements
         long variablePosition = generator.GetRelativeVariablePosition(assignIdentifier);
         var assemblyAssignString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
 
-        generator.Pop($"{assignARegister}");
-        generator.output += $"    mov [{assemblyAssignString}], {assignARegister}\n";
+        if (isPointerValueAssignment)
+        {
+            generator.output += $"    mov rbx, [{assemblyAssignString}]\n";
+            generator.Pop($"{assignARegister}");
+            generator.output += $"    mov [rbx], {assignARegister}\n";
+        }
+        else
+        {
+            generator.Pop($"{assignARegister}");
+            generator.output += $"    mov [{assemblyAssignString}], {assignARegister}\n";
+        }
     }
 
     public static void If(Generator generator, NodeStmtIf ifStatement) // TODO: Fix register usage later

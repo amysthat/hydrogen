@@ -187,9 +187,11 @@ public partial class Parser(List<Token> tokens)
             return NodeStatements.ParseVariableStatement(this);
         }
 
-        if (TryPeek(TokenType.Identifier) && TryPeek(TokenType.Equals, 1)) // variable assignment
+        var isPointerValueAssignment = TryPeek(TokenType.Star) && TryPeek(TokenType.Identifier, 1) && TryPeek(TokenType.Equals, 2);
+        var isStandartAssignment = TryPeek(TokenType.Identifier) && TryPeek(TokenType.Equals, 1);
+        if (isStandartAssignment || isPointerValueAssignment) // variable assignment
         {
-            return NodeStatements.ParseVariableAssignment(this);
+            return NodeStatements.ParseVariableAssignment(this, isPointerValueAssignment);
         }
 
         if (TryPeek(TokenType.OpenCurlyBraces))

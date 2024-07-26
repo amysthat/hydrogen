@@ -27,6 +27,7 @@ public struct NodeStmtAssign : NodeStatement
 {
     public int LineNumber { get; set; }
 
+    public bool IsPointerValue;
     public Token Identifier;
     public NodeExpression ValueExpression;
 }
@@ -146,9 +147,21 @@ internal static class NodeStatements
         return statement;
     }
 
-    public static NodeStmtAssign ParseVariableAssignment(Parser parser)
+    public static NodeStmtAssign ParseVariableAssignment(Parser parser, bool isPointerValue)
     {
-        var identifierToken = parser.Consume()!.Value; // Identifier
+        Token identifierToken;
+
+        if (isPointerValue)
+        {
+            parser.TryPeek(TokenType.Star, errToken => throw new InvalidProgramException());
+
+            parser.Consume(); // *
+            identifierToken = parser.Consume()!.Value; // Pointer
+        }
+        else
+        {
+            identifierToken = parser.Consume()!.Value; // Identifier
+        }
 
         if (parser.Consume()!.Value.Type != TokenType.Equals)
             throw new InvalidProgramException();
@@ -160,12 +173,10 @@ internal static class NodeStatements
             throw new ParsingException(identifierToken.LineNumber, "Expected expression after '=' of variable assignment.");
         }
 
-        var statement = new NodeStmtAssign { LineNumber = identifierToken.LineNumber, Identifier = identifierToken, ValueExpression = expression! };
+        var statement = new NodeStmtAssign { LineNumber = identifierToken.LineNumber, IsPointerValue = isPointerValue, Identifier = identifierToken, ValueExpression = expression! };
 
-        if (parser.TryPeek(TokenType.Semicolon, token => throw new ParsingException(token.LineNumber, "Expected ';' after variable statement.")))
-        {
-            parser.Consume(); // ";"
-        }
+        parser.TryPeek(TokenType.Semicolon, errToken => throw new ParsingException(errToken.LineNumber, "Expected ';' after variable statement."));
+        parser.Consume(); // ";"
 
         return statement;
     }
