@@ -2,9 +2,14 @@ msg : string = "Message was never set.\n";
 
 if 1
 {
-    msg = "Wassup\n";
+    useless : string* = &msg;
+    {
+        useless2 : string = msg;
+
+        msg = "Wassup\n";
+    }
 }
-elif ""
+elif 0
 {
     msg = "No wassup\n";
 }

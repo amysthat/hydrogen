@@ -190,6 +190,13 @@ public class Generator(NodeProgram program)
 
     public long GetRelativeVariablePosition(string variableName)
     {
+        if (workingScope.variables.ContainsKey(variableName))
+        {
+            var variable = workingScope.variables.GetValueByKey(variableName);
+
+            return variable.RelativePosition + variable.Size;
+        }
+
         long stackDifference = 0;
 
         Scope currentScope = workingScope;
@@ -198,13 +205,13 @@ public class Generator(NodeProgram program)
         {
             if (currentScope.variables.ContainsKey(variableName))
             {
-                stackDifference += 8; // Account for scopes's base stack register
-                stackDifference += currentScope.variables.GetValueByKey(variableName).RelativePosition;
-                return stackDifference + currentScope.variables.GetValueByKey(variableName).Size - 1;
+                var variable = currentScope.variables.GetValueByKey(variableName);
+
+                return stackDifference + variable.RelativePosition + variable.Size;
             }
 
-            stackDifference -= currentScope.CurrentStackSize;
             stackDifference -= 8; // rbp is pushed
+            stackDifference -= currentScope.Parent.CurrentStackSize;
             currentScope = currentScope.Parent;
         }
 
