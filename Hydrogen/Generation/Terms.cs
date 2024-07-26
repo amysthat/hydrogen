@@ -134,4 +134,15 @@ public static class Terms
 
         return VariableTypes.String;
     }
+
+    public static VariableType GenerateBool(Generator generator, NodeTermBool termBool)
+    {
+        var integerValue = termBool.Value ? 1 : 0;
+
+        generator.output += $"    xor rax, rax ; {termBool.Value}\n";
+        generator.output += $"    mov al, {@integerValue}\n";
+        generator.Push("rax");
+
+        return VariableTypes.Bool;
+    }
 }

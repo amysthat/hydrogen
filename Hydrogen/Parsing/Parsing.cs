@@ -80,6 +80,12 @@ public partial class Parser(List<Token> tokens)
         {
             return new NodeTermString { LineNumber = stringToken!.Value.LineNumber, String = stringToken!.Value };
         }
+        else if (TryConsume(TokenType.Bool, out var boolToken))
+        {
+            bool value = boolToken!.Value.Value == true.ToString();
+
+            return new NodeTermBool { LineNumber = boolToken!.Value.LineNumber, Value = value };
+        }
 
         return null;
     }
@@ -103,12 +109,7 @@ public partial class Parser(List<Token> tokens)
                 throw new ParsingException(castToken.LineNumber, "Invalid variable type before 'cast'.");
             }
 
-            var expression = ParseExpression();
-
-            if (expression == null)
-            {
-                throw new ParsingException(castToken.LineNumber, "Invalid expression after 'cast'.");
-            }
+            var expression = ParseExpression() ?? throw new ParsingException(castToken.LineNumber, "Invalid expression after 'cast'.");
 
             return new NodeExprCast { LineNumber = castToken.LineNumber, CastType = varType!, Expression = expression! };
         }
@@ -132,12 +133,9 @@ public partial class Parser(List<Token> tokens)
 
             int nextMinimumPrecedence = precedence.Value + 1;
 
-            var rhsExpr = ParseExpression(nextMinimumPrecedence);
-
-            if (rhsExpr is null)
-            {
-                throw new ParsingException(currentToken!.Value.LineNumber, "Unable to parse right hand side expression.");
-            }
+            var rhsExpr = ParseExpression(nextMinimumPrecedence) ?? throw new ParsingException(
+                currentToken!.Value.LineNumber,
+                "Unable to parse right hand side expression.");
 
             var binExpr = new NodeBinExpr
             {
@@ -199,7 +197,7 @@ public partial class Parser(List<Token> tokens)
             var scope = ParseScope()!;
 
             if (!scope.HasValue)
-                throw new InvalidProgramException("ParseScope() returned null instead of Environment.Exit.");
+                throw new InvalidProgramException(); // should have thrown an exception already
 
             return scope.Value;
         }

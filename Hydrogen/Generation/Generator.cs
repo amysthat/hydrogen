@@ -38,6 +38,9 @@ public class Generator(NodeProgram program)
         if (term is NodeTermString termString)
             return Terms.GenerateString(this, termString);
 
+        if (term is NodeTermBool termBool)
+            return Terms.GenerateBool(this, termBool);
+
         throw new InvalidProgramException("Reached unreachable state on GenerateTerm().");
     }
 

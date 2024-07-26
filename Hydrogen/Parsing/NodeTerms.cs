@@ -50,6 +50,13 @@ public struct NodeTermString : NodeTerm
     public Token String;
 }
 
+public struct NodeTermBool : NodeTerm
+{
+    public int LineNumber { get; set; }
+
+    public bool Value;
+}
+
 public interface NodeTerm : NodeExpression
 {
 }

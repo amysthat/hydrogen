@@ -35,4 +35,6 @@ public enum TokenType
 
     Char,
     String,
+
+    Bool,
 }
