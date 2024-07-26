@@ -103,7 +103,7 @@ public static class Statements
                 throw new CompilationException(assignmentStatement.LineNumber, $"{assignIdentifier} is not a pointer.");
 
             if (pointer.RepresentingType != assignExprType)
-                throw new CompilationException(assignmentStatement.LineNumber, $"Type mismatch on variable assignment. *{assignIdentifier} ({variable!.Value.Type.Keyword}) != {assignExprType.Keyword}");
+                throw new CompilationException(assignmentStatement.LineNumber, $"Type mismatch on variable assignment. *{assignIdentifier} ({pointer.RepresentingType}) != {assignExprType.Keyword}");
         }
         else
         {
