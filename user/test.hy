@@ -1,16 +1,16 @@
-fsddfdfd : char = 'A';
+msg : string = "Message was never set.\n";
 
-if fsddfdfd
+if 1
 {
-    write "Wassup\n";
+    msg = "Wassup\n";
 }
 elif ""
 {
-    write "No wassup\n";
+    msg = "No wassup\n";
 }
 else
 {
-    write "Never wassup :(\n";
+    msg = "Never wassup :(\n";
 }
 
-exit byte cast fsddfdfd;
+write msg;

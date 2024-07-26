@@ -87,7 +87,7 @@ public class Generator(NodeProgram program)
 
         if (statement is NodeScope statementScope)
         {
-            GenerateScope(statementScope);
+            GenerateScope(statementScope.Statements);
             output += "\n";
             return;
         }
@@ -106,14 +106,7 @@ public class Generator(NodeProgram program)
     {
         output = "section .text\n    global _start\n\n_start:\n";
 
-        BeginNewWorkingScope();
-
-        foreach (var statement in program.Statements)
-        {
-            GenerateStatement(statement);
-        }
-
-        EndWorkingScope();
+        GenerateScope(program.Statements);
 
         output += "    mov rax, 60 ; End of program\n";
         output += "    xor rdi, rdi\n";
@@ -140,22 +133,29 @@ public class Generator(NodeProgram program)
     }
 
     #region Scopes
-    public void GenerateScope(NodeScope scope)
+    public void GenerateScope(List<NodeStatement> statements)
     {
-        BeginNewWorkingScope();
-        foreach (var statement in scope.Statements)
+        long scopeSize = 0;
+
+        foreach (var statement in statements)
+        {
+            scopeSize += Statements.GetSize(statement);
+        }
+
+        BeginNewWorkingScope(scopeSize);
+        foreach (var statement in statements)
         {
             GenerateStatement(statement);
         }
         EndWorkingScope();
     }
 
-    private void BeginNewWorkingScope()
+    private void BeginNewWorkingScope(long scopeSize)
     {
         output += "    ; Begin new scope\n";
         output += "    push rbp ; Set up stack pointers\n";
         output += "    mov rbp, rsp\n";
-        output += "    sub rsp, 128 ; Dedicate 128 bytes for this scope\n";
+        output += $"    sub rsp, {scopeSize}\n";
         output += "\n";
 
         var scope = new Scope
@@ -168,7 +168,7 @@ public class Generator(NodeProgram program)
 
     private void EndWorkingScope()
     {
-        output += "    add rsp, 128 ; Revert the 128 byte dedication\n";
+        output += $"    add rsp, {workingScope.CurrentStackSize} ; Revert stack dedication\n";
         output += "    leave ; Revert stack pointers\n";
         output += "    ; End of scope\n";
         output += "\n";
@@ -203,7 +203,7 @@ public class Generator(NodeProgram program)
                 return stackDifference + currentScope.variables.GetValueByKey(variableName).Size - 1;
             }
 
-            stackDifference -= 128; // Currently, a static 128 bytes is allocated for stack sizes
+            stackDifference -= currentScope.CurrentStackSize;
             stackDifference -= 8; // rbp is pushed
             currentScope = currentScope.Parent;
         }

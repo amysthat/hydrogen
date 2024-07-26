@@ -28,7 +28,7 @@ public static class Statements
 
         if (writeExprType is not String)
         {
-            throw new CompilationException(writeStatement.LineNumber, $"Invalid expression type on exit. Expected {VariableTypes.String} and got {writeExprType}.");
+            throw new CompilationException(writeStatement.LineNumber, $"Invalid expression type on write. Expected {VariableTypes.String} and got {writeExprType}.");
         }
 
         generator.Pop("rsi ; String pointer");
@@ -123,7 +123,7 @@ public static class Statements
         generator.Pop("rax");
         generator.output += $"    cmp rax, 0\n";
         generator.output += $"    je label{generator.labelCount}\n";
-        generator.GenerateScope(ifStatement.This.Scope);
+        generator.GenerateScope(ifStatement.This.Scope.Statements);
         generator.output += $"    jmp {finalIfLabel}\n";
 
         for (int i = 0; i < ifStatement.Elifs.Count; i++)
@@ -135,14 +135,14 @@ public static class Statements
             generator.Pop("rax");
             generator.output += $"    cmp rax, 0\n";
             generator.output += $"    je label{generator.labelCount}\n";
-            generator.GenerateScope(elifStatement.Scope);
+            generator.GenerateScope(elifStatement.Scope.Statements);
             generator.output += $"    jmp {finalIfLabel}\n";
         }
 
         if (ifStatement.Else.HasValue)
         {
             generator.output += $"label{generator.labelCount}:\n"; generator.labelCount++;
-            generator.GenerateScope(ifStatement.Else.Value);
+            generator.GenerateScope(ifStatement.Else.Value.Statements);
         }
 
         generator.output += $"{finalIfLabel}:\n";
