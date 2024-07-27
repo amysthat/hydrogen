@@ -1,6 +1,6 @@
 namespace Hydrogen.Generation.Variables;
 
-public class Boolean : VariableType
+public class Bool : VariableType
 {
     public override string Keyword => "bool";
     public override long Size => 1;

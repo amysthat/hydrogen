@@ -134,11 +134,17 @@ public static class Statements
     {
         var finalIfLabel = $"finalIfLabel{generator.finalIfLabelCount++}";
 
-        generator.GenerateExpression(ifStatement.This.Expression, VariableTypes.SignedInteger64);
+        var conditionExpressionType = generator.GenerateExpression(ifStatement.This.Expression, VariableTypes.Bool);
+
+        if (conditionExpressionType is not Bool)
+        {
+            throw new CompilationException(ifStatement.LineNumber, $"Expected bool for if condition. Received {conditionExpressionType}.");
+        }
+
         generator.output += "    xor rax, rax ; Clear out rax for if statement\n";
         generator.Pop("rax");
         generator.output += $"    cmp rax, 0\n";
-        generator.output += $"    je label{generator.labelCount}\n";
+        generator.output += $"    je label{generator.labelCount}\n"; // TODO: This is broken. Ifs inside ifs will break.
         generator.GenerateScope(ifStatement.This.Scope.Statements);
         generator.output += $"    jmp {finalIfLabel}\n";
 
@@ -147,7 +153,14 @@ public static class Statements
             var elifStatement = ifStatement.Elifs[i];
 
             generator.output += $"label{generator.labelCount}:\n"; generator.labelCount++;
-            generator.GenerateExpression(elifStatement.Expression, VariableTypes.SignedInteger64);
+
+            var elifConditionExpressionType = generator.GenerateExpression(elifStatement.Expression, VariableTypes.Bool);
+
+            if (elifConditionExpressionType is not Bool)
+            {
+                throw new CompilationException(ifStatement.LineNumber, $"Expected bool for elif condition. Received {elifConditionExpressionType}.");
+            }
+
             generator.Pop("rax");
             generator.output += $"    cmp rax, 0\n";
             generator.output += $"    je label{generator.labelCount}\n";

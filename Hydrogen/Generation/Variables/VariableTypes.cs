@@ -16,5 +16,5 @@ public static class VariableTypes
     // Other
     public static Char Char => new();
     public static String String => new();
-    public static Boolean Bool => new();
+    public static Bool Bool => new();
 }
