@@ -10,8 +10,8 @@ public static class Expressions
     {
         var type = binaryExpression.Type;
 
-        var leftExprType = generator.GenerateExpression(binaryExpression.Left, suggestionType);
-        var rightExprType = generator.GenerateExpression(binaryExpression.Right, leftExprType);
+        var leftExprType = generator.GenerateBinaryExpression(binaryExpression.Left, suggestionType);
+        var rightExprType = generator.GenerateBinaryExpression(binaryExpression.Right, leftExprType);
 
         if (leftExprType is not IntegerType || rightExprType is not IntegerType)
         {
@@ -51,15 +51,15 @@ public static class Expressions
     {
         var targetType = castExpression.CastType;
 
-        var expressionType = generator.GenerateExpression(castExpression.Expression, targetType);
+        var termType = generator.GenerateTerm(castExpression.Term, targetType);
 
-        if (targetType == expressionType)
+        if (targetType == termType)
         {
             Console.WriteLine($"Warning: Redundant cast of {targetType.Keyword} to {targetType.Keyword}.");
             return targetType!;
         }
 
-        Variable.Cast(generator, expressionType, targetType, castExpression.LineNumber);
+        Variable.Cast(generator, termType, targetType, castExpression.LineNumber);
         return targetType!;
     }
 }

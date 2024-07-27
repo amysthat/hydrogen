@@ -12,7 +12,7 @@ public static class Terms
     {
         IntegerType integerType = suggestionType is IntegerType _integerType ? _integerType : VariableTypes.SignedInteger64;
 
-        if (Variable.IsUnsignedInteger(integerType) && termInteger.Int_Lit.Value!.StartsWith('-'))
+        if (Variable.IsUnsignedInteger(integerType) && termInteger.IntegerLiteral.Value!.StartsWith('-'))
         {
             throw new CompilationException(termInteger.LineNumber, "Negative value given for unsigned integer.");
         }
@@ -32,19 +32,7 @@ public static class Terms
             throw new CompilationException(termIdentifier.LineNumber, $"Variable '{identifier}' has not been declared.");
         }
 
-        if (variable.Value.Type is not IntegerType integerType)
-        {
-            throw new InvalidOperationException();
-        }
-
-        var variablePosition = generator.GetRelativeVariablePosition(identifier);
-        var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
-        var asmPointerSize = integerType.AsmPointerSize;
-        var aRegister = integerType.AsmARegister;
-
-        generator.output += "    xor rax, rax\n";
-        generator.output += $"    mov {aRegister}, {asmPointerSize} [{assemblyString}] ; {variable!.Value.Type.Keyword} {identifier} variable\n";
-        generator.Push("rax");
+        variable.Value.Type.PushFromStack(generator, identifier);
 
         return variable!.Value.Type;
     }

@@ -39,7 +39,7 @@ public partial class Parser(List<Token> tokens)
             return new NodeTermInteger
             {
                 LineNumber = intLitToken!.Value.LineNumber,
-                Int_Lit = intLitToken!.Value,
+                IntegerLiteral = intLitToken!.Value,
             };
         }
         else if (TryConsume(TokenType.Identifier, out var identToken))
@@ -58,20 +58,20 @@ public partial class Parser(List<Token> tokens)
 
             return new NodeTermPointerValue { LineNumber = identifier!.Value.LineNumber, Identifier = new NodeTermIdentifier { LineNumber = identToken!.Value.LineNumber, Identifier = identifier!.Value } };
         }
-        else if (TryConsume(TokenType.OpenParenthesis, out var openParen))
-        {
-            var expression = ParseExpression();
+        // else if (TryConsume(TokenType.OpenParenthesis, out var openParen))
+        // {
+        //     var expression = ParseExpression();
 
-            if (expression == null)
-            {
-                throw new ParsingException(openParen!.Value.LineNumber, "Expected expression after parenthesis '('.");
-            }
+        //     if (expression == null)
+        //     {
+        //         throw new ParsingException(openParen!.Value.LineNumber, "Expected expression after parenthesis '('.");
+        //     }
 
-            if (TryPeek(TokenType.CloseParenthesis, errToken => throw new ParsingException(errToken.LineNumber, "Expected ')' after parenthesis for expression.")))
-                Consume();
+        //     if (TryPeek(TokenType.CloseParenthesis, errToken => throw new ParsingException(errToken.LineNumber, "Expected ')' after parenthesis for expression.")))
+        //         Consume();
 
-            return new NodeTermParen { LineNumber = openParen!.Value.LineNumber, Expression = expression };
-        }
+        //     return new NodeTermParen { LineNumber = openParen!.Value.LineNumber, Expression = expression };
+        // }
         else if (TryConsume(TokenType.Char, out var charToken))
         {
             return new NodeTermChar { LineNumber = charToken!.Value.LineNumber, Char = charToken!.Value };
@@ -90,7 +90,7 @@ public partial class Parser(List<Token> tokens)
         return null;
     }
 
-    public NodeExpression? ParseExpression(int minimumPrecedence = 0)
+    public NodeExpression? ParseExpression()
     {
         if (!Peek().HasValue)
             return null;
@@ -109,12 +109,29 @@ public partial class Parser(List<Token> tokens)
                 throw new ParsingException(castToken.LineNumber, "Invalid variable type before 'cast'.");
             }
 
-            var expression = ParseExpression() ?? throw new ParsingException(castToken.LineNumber, "Invalid expression after 'cast'.");
+            var castTerm = ParseTerm() ?? throw new ParsingException(castToken.LineNumber, "Invalid term after 'cast'.");
 
-            return new NodeExprCast { LineNumber = castToken.LineNumber, CastType = varType!, Expression = expression! };
+            return new NodeExprCast { LineNumber = castToken.LineNumber, CastType = varType!, Term = castTerm };
         }
 
-        if (ParseTerm() is not NodeExpression lhsExpr)
+        var sharedTerm = ParseTerm();
+
+        if (sharedTerm is BinaryExprSupporter)
+        {
+            var binExpr = ParseBinaryExpression(preparsedTerm: sharedTerm);
+
+            if (binExpr is not null)
+                return binExpr;
+        } // even if the term is a supports binary expressions, there was just no binary expressions, only the term itself
+
+        return sharedTerm;
+    }
+
+    public NodeBinExpr? ParseBinaryExpression(NodeTerm? preparsedTerm = null, int minimumPrecedence = 0)
+    {
+        var term = preparsedTerm ?? ParseTerm();
+
+        if (term is not BinaryExprSupporter lhsExpr)
             return null;
 
         while (true)
@@ -133,7 +150,7 @@ public partial class Parser(List<Token> tokens)
 
             int nextMinimumPrecedence = precedence.Value + 1;
 
-            var rhsExpr = ParseExpression(nextMinimumPrecedence) ?? throw new ParsingException(
+            var rhsExpr = ParseBinaryExpression(minimumPrecedence: nextMinimumPrecedence) ?? throw new ParsingException(
                 currentToken!.Value.LineNumber,
                 "Unable to parse right hand side expression.");
 
@@ -148,14 +165,17 @@ public partial class Parser(List<Token> tokens)
                     TokenType.Minus => NodeBinExprType.Subtract,
                     TokenType.Star => NodeBinExprType.Multiply,
                     TokenType.Slash => NodeBinExprType.Divide,
-                    _ => throw new InvalidProgramException("Unreachable state reached in ParseExpression()."),
+                    _ => throw new InvalidProgramException($"Unreachable state reached in {nameof(ParseBinaryExpression)}()."),
                 }
             };
 
             lhsExpr = binExpr;
         }
 
-        return lhsExpr;
+        if (lhsExpr is not NodeBinExpr)
+            return null; // turns out this is not a full-on bin expr, but just a term that supports binary expressions
+
+        return (NodeBinExpr)lhsExpr;
     }
 
     private static int? GetBinaryPrecedence(Token token)

@@ -2,39 +2,32 @@
 
 namespace Hydrogen.Parsing;
 
-public struct NodeTermInteger : NodeTerm
+public struct NodeTermInteger : NodeTerm, BinaryExprSupporter
 {
     public int LineNumber { get; set; }
 
-    public Token Int_Lit;
+    public Token IntegerLiteral;
 }
 
-public struct NodeTermIdentifier : NodeTerm
+public struct NodeTermIdentifier : NodeTerm, BinaryExprSupporter
 {
     public int LineNumber { get; set; }
 
     public Token Identifier;
 }
 
-public struct NodeTermPointerAddress : NodeTerm
+public struct NodeTermPointerAddress : NodeTerm, BinaryExprSupporter
 {
     public int LineNumber { get; set; }
 
     public NodeTermIdentifier Identifier;
 }
 
-public struct NodeTermPointerValue : NodeTerm
+public struct NodeTermPointerValue : NodeTerm, BinaryExprSupporter
 {
     public int LineNumber { get; set; }
 
     public NodeTermIdentifier Identifier;
-}
-
-public struct NodeTermParen : NodeTerm
-{
-    public int LineNumber { get; set; }
-
-    public NodeExpression Expression;
 }
 
 public struct NodeTermChar : NodeTerm

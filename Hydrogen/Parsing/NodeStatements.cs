@@ -13,7 +13,7 @@ public struct NodeStmtWrite : NodeStatement
 {
     public int LineNumber { get; set; }
 
-    public NodeExpression String;
+    public NodeTerm String;
 }
 public struct NodeStmtVariable : NodeStatement
 {
@@ -65,7 +65,7 @@ internal static class NodeStatements
                 new NodeTermInteger
                 {
                     LineNumber = exitToken.LineNumber,
-                    Int_Lit =
+                    IntegerLiteral =
                     new Token
                     {
                         Type = TokenType.Int_Lit,
@@ -97,14 +97,11 @@ internal static class NodeStatements
     {
         var writeToken = parser.Consume()!.Value;
 
-        var nodeExpr = parser.ParseExpression(); // return code
+        var stringToWrite = parser.ParseTerm() ?? throw new ParsingException(
+            writeToken.LineNumber,
+            "Invalid expression after 'write'.");
 
-        if (nodeExpr == null)
-        {
-            throw new ParsingException(writeToken.LineNumber, "Invalid expression after 'write'.");
-        }
-
-        var writeStatement = new NodeStmtWrite { LineNumber = writeToken.LineNumber, String = nodeExpr };
+        var writeStatement = new NodeStmtWrite { LineNumber = writeToken.LineNumber, String = stringToWrite };
 
         if (parser.TryPeek(TokenType.Semicolon, token => throw new ParsingException(writeToken.LineNumber, "Expected ';' after 'write'.")))
         {
@@ -130,12 +127,9 @@ internal static class NodeStatements
 
         parser.Consume(); // "="
 
-        var expression = parser.ParseExpression();
-
-        if (expression == null)
-        {
-            throw new ParsingException(identifierToken.LineNumber, "Expected expression after '=' of variable statement.");
-        }
+        var expression = parser.ParseExpression() ?? throw new ParsingException(
+            identifierToken.LineNumber,
+            "Expected expression after '=' of variable statement.");
 
         var statement = new NodeStmtVariable { LineNumber = identifierToken.LineNumber, Identifier = identifierToken, Type = variableType!, ValueExpression = expression! };
 

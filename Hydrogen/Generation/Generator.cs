@@ -29,8 +29,8 @@ public class Generator(NodeProgram program)
         if (term is NodeTermPointerValue termPointerValue)
             return Terms.PointerValue(this, termPointerValue);
 
-        if (term is NodeTermParen termParenthesis)
-            return GenerateExpression(termParenthesis.Expression, suggestionType);
+        // if (term is NodeTermParen termParenthesis)
+        //     return GenerateExpression(termParenthesis.Expression, suggestionType);
 
         if (term is NodeTermChar termChar)
             return Terms.GenerateChar(this, termChar);
@@ -41,21 +41,41 @@ public class Generator(NodeProgram program)
         if (term is NodeTermBool termBool)
             return Terms.GenerateBool(this, termBool);
 
-        throw new InvalidProgramException("Reached unreachable state on GenerateTerm().");
+        throw new InvalidProgramException($"Reached unreachable state on {nameof(GenerateTerm)}().");
     }
 
     public VariableType GenerateExpression(NodeExpression expression, VariableType suggestionType)
     {
-        if (expression is NodeTerm term)
-            return GenerateTerm(term!, suggestionType);
-
-        if (expression is NodeBinExpr binaryExpression)
-            return Expressions.BinaryExpression(this, binaryExpression, suggestionType);
-
         if (expression is NodeExprCast castExpression)
             return Expressions.Cast(this, castExpression);
 
+        if (expression is NodeTerm term)
+            return GenerateTerm(term!, suggestionType);
+
+        // if (expression is NodeBinExpr binaryExpression) TODO: Fix
+        //     return Expressions.BinaryExpression(this, binaryExpression, suggestionType);
+
         throw new InvalidProgramException("Reached unreachable state on GenerateExpression().");
+    }
+
+    public VariableType GenerateBinaryExpression(BinaryExprSupporter binExprSupporter, VariableType suggestionType)
+    {
+        if (binExprSupporter is NodeBinExpr binaryExpression)
+            return Expressions.BinaryExpression(this, binaryExpression, suggestionType);
+
+        if (binExprSupporter is NodeTermInteger termInteger)
+            return Terms.Integer(this, termInteger, suggestionType);
+
+        if (binExprSupporter is NodeTermIdentifier termIdentifier)
+            return Terms.Identifier(this, termIdentifier);
+
+        if (binExprSupporter is NodeTermPointerAddress termPointerAdress)
+            return Terms.PointerAddress(this, termPointerAdress);
+
+        if (binExprSupporter is NodeTermPointerValue termPointerValue)
+            return Terms.PointerValue(this, termPointerValue);
+
+        throw new InvalidProgramException($"Reached unreachable state on {nameof(GenerateBinaryExpression)}().");
     }
 
     private void GenerateStatement(NodeStatement statement)

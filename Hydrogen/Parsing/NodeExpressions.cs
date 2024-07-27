@@ -7,8 +7,9 @@ public struct NodeExprCast : NodeExpression
     public int LineNumber { get; set; }
 
     public VariableType CastType;
-    public NodeExpression Expression;
+    public NodeTerm Term;
 }
+
 public interface NodeExpression : Node
 {
 }
@@ -20,12 +21,16 @@ public enum NodeBinExprType
     Multiply,
     Divide,
 }
-public struct NodeBinExpr : NodeExpression
+public struct NodeBinExpr : NodeExpression, BinaryExprSupporter
 {
     public int LineNumber { get; set; }
 
     public NodeBinExprType Type;
 
-    public NodeExpression Left;
-    public NodeExpression Right;
+    public BinaryExprSupporter Left;
+    public BinaryExprSupporter Right;
+}
+
+public interface BinaryExprSupporter
+{
 }

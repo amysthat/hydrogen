@@ -16,6 +16,24 @@ public abstract class IntegerType : VariableType
         return true;
     }
 
+    public override void MoveIntoStack(Generator generator, long relativePosition)
+    {
+        var relativePositionAsm = Generator.CastRelativeVariablePositionToAssembly(relativePosition);
+
+        generator.Pop(AsmARegister);
+        generator.output += $"    mov [{relativePositionAsm}], {AsmARegister}\n";
+    }
+
+    public override void PushFromStack(Generator generator, string variableIdentifier)
+    {
+        var variablePosition = generator.GetRelativeVariablePosition(variableIdentifier);
+        var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
+
+        generator.output += "    xor rax, rax\n";
+        generator.output += $"    mov {AsmARegister}, {AsmPointerSize} [{assemblyString}] ; {Keyword} {variableIdentifier} variable\n";
+        generator.Push("rax");
+    }
+
     public abstract void IntegerCast(Generator generator, IntegerType integerType, int lineNumber);
 }
 

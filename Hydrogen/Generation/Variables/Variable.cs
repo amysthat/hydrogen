@@ -40,19 +40,19 @@ public struct Variable
 
         if (type is Pointer)
         {
-            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for {type.Keyword}\n";
+            generator.output += $"    mov {register}, {integer.IntegerLiteral.Value} ; Integer for {type.Keyword}\n";
         }
         else if (type.Size == 8)
         {
-            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for 64 bits\n";
+            generator.output += $"    mov {register}, {integer.IntegerLiteral.Value} ; Integer for 64 bits\n";
         }
         else if (type.Size == 4) // I hate you assembly
         {
-            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for 32 bits\n";
+            generator.output += $"    mov {register}, {integer.IntegerLiteral.Value} ; Integer for 32 bits\n";
         }
         else
         {
-            generator.output += $"    mov {register}, {integer.Int_Lit.Value} ; Integer for {type.Keyword}\n";
+            generator.output += $"    mov {register}, {integer.IntegerLiteral.Value} ; Integer for {type.Keyword}\n";
             generator.output += $"    movzx rax, {register}\n";
         }
 

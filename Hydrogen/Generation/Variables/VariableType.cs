@@ -6,6 +6,8 @@ public abstract class VariableType
     public abstract long Size { get; }
 
     public abstract bool Cast(Generator generator, VariableType targetType, int lineNumber);
+    public abstract void MoveIntoStack(Generator generator, long relativePosition);
+    public abstract void PushFromStack(Generator generator, string variableIdentifier);
 
     public static bool operator ==(VariableType? x, VariableType? y) => x is not null && y is not null && x.Keyword == y.Keyword;
     public static bool operator !=(VariableType? x, VariableType? y) => x is not null && y is not null && x.Keyword != y.Keyword;

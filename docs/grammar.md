@@ -37,30 +37,13 @@ $$
                         & ^\text{must have matching [varType]} \\
     
     [\text{term}] &\to \begin{cases}
-                        [\text{integer}] \\
+                        \text{int\_lit} \\
                         \text{ident} \\
                         ([\text{expr}]) \\
                         [\text{pointer}] \\
                         *[\text{pointer}] \\
                         \text{'}char\text{'} \\
                         \text{"}string\text{"} \\
-                        \end{cases} \\
-
-    [\text{integer}] &\to \begin{cases}
-                        \text{int\_lit} \\
-                        \end{cases} \\
-    
-    [\text{varType}] &\to \begin{cases}
-                        \text{i64} \\
-                        \text{u64} \\
-                        \text{i16} \\
-                        \text{u16} \\
-                        \text{i32} \\
-                        \text{u32} \\
-                        \text{byte} \\
-                        [\text{varType}]* \\
-                        \text{char} \\
-                        \text{string} \\
                         \end{cases} \\
     
     [\text{pointer}] &\to \begin{cases}

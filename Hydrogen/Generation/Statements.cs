@@ -25,7 +25,7 @@ public static class Statements
     {
         generator.output += "    ; write\n";
 
-        var writeExprType = generator.GenerateExpression(writeStatement.String, VariableTypes.String);
+        var writeExprType = generator.GenerateTerm(writeStatement.String, VariableTypes.String);
 
         if (writeExprType is not String)
         {
@@ -75,12 +75,8 @@ public static class Statements
 
         generator.workingScope.DefineVariable(identifier, variableType);
 
-        string variableARegister = (variableType as IntegerType)!.AsmARegister;
         long relativePosition = generator.GetRelativeVariablePosition(identifier);
-        string relativePositionAsm = Generator.CastRelativeVariablePositionToAssembly(relativePosition);
-
-        generator.Pop(variableARegister);
-        generator.output += $"    mov [{relativePositionAsm}], {variableARegister}\n";
+        variableType.MoveIntoStack(generator, relativePosition);
     }
 
     public static void VariableAssignment(Generator generator, NodeStmtAssign assignmentStatement)
