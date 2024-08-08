@@ -30,4 +30,16 @@ public class Bool : VariableType
         generator.output += $"    mov al, byte [{assemblyString}] ; bool {variableIdentifier} variable\n";
         generator.Push("rax");
     }
+
+    public override void PushFromPointer(Generator generator, Variable pointer)
+    {
+        var identifier = pointer.Name;
+
+        var variablePosition = generator.GetRelativeVariablePosition(identifier);
+        var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
+
+        generator.output += $"    mov rbx, [{assemblyString}] ; {identifier} pointer\n";
+        generator.output += $"    mov al, byte [rbx] ; Pointer value\n";
+        generator.Push("rax");
+    }
 }

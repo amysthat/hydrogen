@@ -29,7 +29,9 @@ public static class Statements
 
         if (writeExprType is not String)
         {
-            throw new CompilationException(writeStatement.LineNumber, $"Invalid expression type on write. Expected {VariableTypes.String} and got {writeExprType}.");
+            throw new CompilationException(
+                writeStatement.LineNumber,
+                $"Invalid expression type on write. Expected {VariableTypes.String} and got {writeExprType}.");
         }
 
         generator.Pop("rsi ; String pointer");
@@ -70,7 +72,9 @@ public static class Statements
 
         if (variableType != expressionType)
         {
-            throw new CompilationException(variableStatement.LineNumber, $"Type mismatch on variable statement. {variableType.Keyword} != {expressionType.Keyword}");
+            throw new CompilationException(
+                variableStatement.LineNumber,
+                $"Type mismatch on variable statement. {variableType.Keyword} != {expressionType.Keyword}");
         }
 
         generator.workingScope.DefineVariable(identifier, variableType);
@@ -88,7 +92,9 @@ public static class Statements
 
         if (!variable.HasValue)
         {
-            throw new CompilationException(assignmentStatement.LineNumber, $"Variable '{assignIdentifier}' has not been declared yet.");
+            throw new CompilationException(
+                assignmentStatement.LineNumber,
+                $"Variable '{assignIdentifier}' has not been declared yet.");
         }
 
         generator.output += $"    ; Assign {assignIdentifier}\n";
@@ -134,12 +140,12 @@ public static class Statements
     {
         var finalIfLabel = $"finalIfLabel{generator.finalIfLabelCount++}";
 
-        var conditionExpressionType = generator.GenerateExpression(ifStatement.This.Expression, VariableTypes.Bool);
-
-        if (conditionExpressionType is not Bool)
+        if (ifStatement.This.Expression is not LogicalExprSupporter logicalIfExpr)
         {
-            throw new CompilationException(ifStatement.LineNumber, $"Expected bool for if condition. Received {conditionExpressionType}.");
+            throw new CompilationException(ifStatement.LineNumber, $"Expected logical expression for if statement.");
         }
+
+        generator.GenerateLogicalExpression(logicalIfExpr);
 
         generator.output += "    xor rax, rax ; Clear out rax for if statement\n";
         generator.Pop("rax");
@@ -154,12 +160,12 @@ public static class Statements
 
             generator.output += $"label{generator.labelCount}:\n"; generator.labelCount++;
 
-            var elifConditionExpressionType = generator.GenerateExpression(elifStatement.Expression, VariableTypes.Bool);
-
-            if (elifConditionExpressionType is not Bool)
+            if (elifStatement.Expression is not LogicalExprSupporter logicalElifExpr)
             {
-                throw new CompilationException(ifStatement.LineNumber, $"Expected bool for elif condition. Received {elifConditionExpressionType}.");
+                throw new CompilationException(ifStatement.LineNumber, $"Expected logical expression for elif statement.");
             }
+
+            generator.GenerateLogicalExpression(logicalElifExpr);
 
             generator.Pop("rax");
             generator.output += $"    cmp rax, 0\n";

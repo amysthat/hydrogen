@@ -14,6 +14,7 @@ internal static class Keywords
         else if (keyword == "write") return Token(TokenType.Write);
         else if (keyword == "true") return Token(TokenType.Bool, true.ToString());
         else if (keyword == "false") return Token(TokenType.Bool, false.ToString());
+        else if (keyword == "not") return Token(TokenType.Not);
         else
         {
             foreach (var property in typeof(VariableTypes).GetProperties())

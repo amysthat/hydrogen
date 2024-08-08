@@ -33,13 +33,13 @@ public class Generator(NodeProgram program)
         //     return GenerateExpression(termParenthesis.Expression, suggestionType);
 
         if (term is NodeTermChar termChar)
-            return Terms.GenerateChar(this, termChar);
+            return Terms.Char(this, termChar);
 
         if (term is NodeTermString termString)
-            return Terms.GenerateString(this, termString);
+            return Terms.String(this, termString);
 
         if (term is NodeTermBool termBool)
-            return Terms.GenerateBool(this, termBool);
+            return Terms.Bool(this, termBool);
 
         throw new InvalidProgramException($"Reached unreachable state on {nameof(GenerateTerm)}().");
     }
@@ -52,8 +52,11 @@ public class Generator(NodeProgram program)
         if (expression is NodeTerm term)
             return GenerateTerm(term!, suggestionType);
 
-        // if (expression is NodeBinExpr binaryExpression) TODO: Fix
-        //     return Expressions.BinaryExpression(this, binaryExpression, suggestionType);
+        if (expression is NodeBinExpr binaryExpression)
+            return Expressions.BinaryExpression(this, binaryExpression, suggestionType);
+
+        if (expression is NodeLogicalExpr logicalExpression)
+            return GenerateLogicalExpression(logicalExpression);
 
         throw new InvalidProgramException("Reached unreachable state on GenerateExpression().");
     }
@@ -76,6 +79,37 @@ public class Generator(NodeProgram program)
             return Terms.PointerValue(this, termPointerValue);
 
         throw new InvalidProgramException($"Reached unreachable state on {nameof(GenerateBinaryExpression)}().");
+    }
+
+    public VariableType GenerateLogicalExpression(LogicalExprSupporter logicalExprSupporter)
+    {
+        if (logicalExprSupporter is NodeTermBool termBool)
+            return Terms.Bool(this, termBool);
+
+        if (logicalExprSupporter is NodeTermIdentifier termIdentifier)
+        {
+            var variableType = Terms.Identifier(this, termIdentifier);
+
+            if (variableType != VariableTypes.Bool)
+                throw new CompilationException(termIdentifier.LineNumber, $"{termIdentifier.Identifier.Value} ({variableType}) is not bool for logical expression.");
+
+            return VariableTypes.Bool;
+        }
+
+        if (logicalExprSupporter is NodeTermPointerValue termPtrValue)
+        {
+            var variableType = Terms.PointerValue(this, termPtrValue);
+
+            if (variableType != VariableTypes.Bool)
+                throw new CompilationException(termPtrValue.LineNumber, $"*{termPtrValue.Identifier.Identifier.Value} is not bool for logical expression.");
+
+            return VariableTypes.Bool;
+        }
+
+        if (logicalExprSupporter is NodeLogicNotExpr notExpr)
+            return Expressions.Logic.Not(this, notExpr);
+
+        throw new InvalidProgramException($"Reached unreachable state on {nameof(GenerateLogicalExpression)}().");
     }
 
     private void GenerateStatement(NodeStatement statement)
@@ -153,6 +187,13 @@ public class Generator(NodeProgram program)
             return OptimizeHorribly(output);
         else
             return output;
+    }
+
+    public void Asm(string instruction)
+    {
+        output += "    ";
+        output += instruction;
+        output += "\n";
     }
 
     #region Scopes

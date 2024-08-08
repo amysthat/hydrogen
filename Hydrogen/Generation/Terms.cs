@@ -75,27 +75,12 @@ public static class Terms
 
         var pointerType = (variable.Value.Type as Pointer)!;
 
-        if (pointerType.RepresentingType is not IntegerType)
-        {
-            throw new InvalidOperationException();
-        }
-
-        var targetType = (pointerType.RepresentingType as IntegerType)!;
-
-        var variablePosition = generator.GetRelativeVariablePosition(identifier);
-        var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
-        var pointerSize = targetType.AsmPointerSize;
-
-        var aRegister = targetType.AsmARegister;
-
-        generator.output += $"    mov rbx, [{assemblyString}] ; {identifier} pointer\n";
-        generator.output += $"    mov {aRegister}, {pointerSize} [rbx] ; Pointer value\n";
-        generator.Push("rax");
+        pointerType.RepresentingType.PushFromPointer(generator, variable!.Value);
 
         return pointerType.RepresentingType;
     }
 
-    public static VariableType GenerateChar(Generator generator, NodeTermChar termChar)
+    public static VariableType Char(Generator generator, NodeTermChar termChar)
     {
         byte @byte = Encoding.ASCII.GetBytes(@termChar.Char.Value!)[0];
 
@@ -106,7 +91,7 @@ public static class Terms
         return VariableTypes.Char;
     }
 
-    public static VariableType GenerateString(Generator generator, NodeTermString termString)
+    public static VariableType String(Generator generator, NodeTermString termString)
     {
         string @string = termString.String.Value!;
 
@@ -123,7 +108,7 @@ public static class Terms
         return VariableTypes.String;
     }
 
-    public static VariableType GenerateBool(Generator generator, NodeTermBool termBool)
+    public static VariableType Bool(Generator generator, NodeTermBool termBool)
     {
         var integerValue = termBool.Value ? 1 : 0;
 

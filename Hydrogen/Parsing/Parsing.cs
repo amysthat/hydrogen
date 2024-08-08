@@ -114,6 +114,11 @@ public partial class Parser(List<Token> tokens)
             return new NodeExprCast { LineNumber = castToken.LineNumber, CastType = varType!, Term = castTerm };
         }
 
+        var logicalNotExpression = ParseLogicalNotExpression();
+
+        if (logicalNotExpression is not null)
+            return logicalNotExpression;
+
         var sharedTerm = ParseTerm();
 
         if (sharedTerm is BinaryExprSupporter)
@@ -127,7 +132,7 @@ public partial class Parser(List<Token> tokens)
         return sharedTerm;
     }
 
-    public NodeBinExpr? ParseBinaryExpression(NodeTerm? preparsedTerm = null, int minimumPrecedence = 0)
+    public NodeBinExpr? ParseBinaryExpression(NodeTerm preparsedTerm = null!, int minimumPrecedence = 0)
     {
         var term = preparsedTerm ?? ParseTerm();
 
@@ -186,6 +191,30 @@ public partial class Parser(List<Token> tokens)
             TokenType.Star or TokenType.Slash => 1,
             _ => null,
         };
+    }
+
+    public NodeLogicNotExpr? ParseLogicalNotExpression()
+    {
+        if (Peek()!.Value.Type != TokenType.Not) // Peek() to avoid consuming unhandled token
+            return null;
+
+        var notToken = Consume();
+
+        var innerExpression = ParseExpression();
+
+        if (innerExpression is not LogicalExprSupporter logicalInnerExpression)
+            throw new ParsingException(notToken!.Value.LineNumber, "Encountered a non-logical expression after 'not' token.");
+
+        return new NodeLogicNotExpr
+        {
+            LineNumber = notToken!.Value.LineNumber,
+            InnerExpression = logicalInnerExpression,
+        };
+    }
+
+    public NodeLogicalExpr? ParseLogicalExpression(NodeTerm preparsedTerm = null!)
+    {
+        throw new NotImplementedException();
     }
 
     public NodeStatement? ParseStatement()

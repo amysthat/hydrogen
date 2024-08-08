@@ -34,6 +34,18 @@ public abstract class IntegerType : VariableType
         generator.Push("rax");
     }
 
+    public override void PushFromPointer(Generator generator, Variable pointer)
+    {
+        var identifier = pointer.Name;
+
+        var variablePosition = generator.GetRelativeVariablePosition(identifier);
+        var assemblyString = Generator.CastRelativeVariablePositionToAssembly(variablePosition);
+
+        generator.output += $"    mov rbx, [{assemblyString}] ; {identifier} pointer\n";
+        generator.output += $"    mov {AsmARegister}, {AsmPointerSize} [rbx] ; Pointer value\n";
+        generator.Push("rax");
+    }
+
     public abstract void IntegerCast(Generator generator, IntegerType integerType, int lineNumber);
 }
 

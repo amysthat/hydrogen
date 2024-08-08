@@ -2,6 +2,10 @@
 
 namespace Hydrogen.Parsing;
 
+public interface NodeTerm : NodeExpression
+{
+}
+
 public struct NodeTermInteger : NodeTerm, BinaryExprSupporter
 {
     public int LineNumber { get; set; }
@@ -9,7 +13,7 @@ public struct NodeTermInteger : NodeTerm, BinaryExprSupporter
     public Token IntegerLiteral;
 }
 
-public struct NodeTermIdentifier : NodeTerm, BinaryExprSupporter
+public struct NodeTermIdentifier : NodeTerm, BinaryExprSupporter, LogicalExprSupporter
 {
     public int LineNumber { get; set; }
 
@@ -23,7 +27,7 @@ public struct NodeTermPointerAddress : NodeTerm, BinaryExprSupporter
     public NodeTermIdentifier Identifier;
 }
 
-public struct NodeTermPointerValue : NodeTerm, BinaryExprSupporter
+public struct NodeTermPointerValue : NodeTerm, BinaryExprSupporter, LogicalExprSupporter
 {
     public int LineNumber { get; set; }
 
@@ -43,13 +47,9 @@ public struct NodeTermString : NodeTerm
     public Token String;
 }
 
-public struct NodeTermBool : NodeTerm
+public struct NodeTermBool : NodeTerm, LogicalExprSupporter
 {
     public int LineNumber { get; set; }
 
     public bool Value;
-}
-
-public interface NodeTerm : NodeExpression
-{
 }

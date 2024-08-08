@@ -55,11 +55,29 @@ public static class Expressions
 
         if (targetType == termType)
         {
-            Console.WriteLine($"Warning: Redundant cast of {targetType.Keyword} to {targetType.Keyword}.");
+            Console.WriteLine($"Warning: Redundant cast of {termType.Keyword} to {targetType.Keyword}.");
             return targetType!;
         }
 
         Variable.Cast(generator, termType, targetType, castExpression.LineNumber);
         return targetType!;
+    }
+
+    public static class Logic
+    {
+        public static VariableType Not(Generator generator, NodeLogicNotExpr notExpr)
+        {
+            generator.Asm("; Not logical expression");
+
+            generator.GenerateLogicalExpression(notExpr.InnerExpression);
+
+            generator.Asm("pop rdi");
+            generator.Asm("xor rax, rax");
+            generator.Asm("test rdi, rdi");
+            generator.Asm("sete al");
+            generator.Asm("push rax");
+
+            return VariableTypes.Bool;
+        }
     }
 }

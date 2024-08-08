@@ -14,6 +14,8 @@ public interface NodeExpression : Node
 {
 }
 
+// Binary Expression
+
 public enum NodeBinExprType
 {
     Add,
@@ -33,4 +35,21 @@ public struct NodeBinExpr : NodeExpression, BinaryExprSupporter
 
 public interface BinaryExprSupporter
 {
+}
+
+// Logical Expression
+
+public interface NodeLogicalExpr : NodeExpression, LogicalExprSupporter
+{
+}
+
+public interface LogicalExprSupporter
+{
+}
+
+public struct NodeLogicNotExpr : NodeLogicalExpr
+{
+    public int LineNumber { get; set; }
+
+    public LogicalExprSupporter InnerExpression;
 }
